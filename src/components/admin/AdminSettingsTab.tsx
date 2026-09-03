@@ -35,6 +35,7 @@ interface AdminSettingsTabProps {
   onImportBackupFile?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRestoreStarterCatalog?: () => void;
   sqlSchema?: string;
+  onNavigateToSupabase?: () => void;
 }
 
 export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
@@ -46,6 +47,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   onImportBackupFile,
   onRestoreStarterCatalog,
   sqlSchema,
+  onNavigateToSupabase,
 }) => {
   const [tempSettings, setTempSettings] = useState<AffiliateSettings>(affiliateSettings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -335,11 +337,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               </span>
             </div>
           </div>
-          {supabaseStatus?.connected && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 self-start sm:self-auto">
-              Automático
-            </span>
-          )}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {supabaseStatus?.connected ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                Automático
+              </span>
+            ) : null}
+            {onNavigateToSupabase && (
+              <button
+                type="button"
+                onClick={onNavigateToSupabase}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-bold text-xs cursor-pointer transition-colors shadow-2xs"
+              >
+                {supabaseStatus?.connected ? 'Configurar Conexão' : 'Conectar Supabase →'}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Backup & Restore Tools */}

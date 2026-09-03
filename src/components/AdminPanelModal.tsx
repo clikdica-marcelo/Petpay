@@ -11,7 +11,8 @@ import {
   Settings, 
   Layers,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Cloud
 } from 'lucide-react';
 import { Product, AffiliateSettings, Banner, UserAccount } from '../types';
 import { INITIAL_PRODUCTS } from '../data/mockProducts';
@@ -24,8 +25,15 @@ import { AdminBannersTab } from './admin/AdminBannersTab';
 import { AdminAnalyticsTab } from './admin/AdminAnalyticsTab';
 import { AdminUsersTab } from './admin/AdminUsersTab';
 import { AdminSettingsTab } from './admin/AdminSettingsTab';
+import { AdminSupabaseTab } from './admin/AdminSupabaseTab';
 import { BulkImportModal } from './BulkImportModal';
 import { EditProductModal } from './EditProductModal';
+import { 
+  checkSupabaseStatus as checkSupabaseStatusUtil, 
+  syncAllProductsToCloud, 
+  loadProductsFromCloud, 
+  SUPABASE_SQL_SCHEMA 
+} from '../utils/supabaseClient';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -75,7 +83,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     url?: string | null;
     totalProducts?: number;
     message?: string;
+    needTable?: boolean;
+    needPolicy?: boolean;
+    source?: string;
   } | null>(null);
+  const [isCheckingSupabase, setIsCheckingSupabase] = useState(false);
+  const [isSyncingSupabase, setIsSyncingSupabase] = useState(false);
+  const [isLoadingFromSupabase, setIsLoadingFromSupabase] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Sub-modals
@@ -120,16 +134,73 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   };
 
   const checkSupabaseStatus = async () => {
+    setIsCheckingSupabase(true);
     try {
-      const res = await fetch('/api/supabase/status');
-      const data = await res.json();
-      setSupabaseStatus(data);
-    } catch (err) {
+      const status = await checkSupabaseStatusUtil();
+      setSupabaseStatus(status);
+    } catch (err: any) {
       setSupabaseStatus({
         configured: false,
         connected: false,
-        message: 'Não foi possível verificar o status do Supabase.',
+        message: 'Erro ao verificar comunicação com o Supabase: ' + (err?.message || err),
       });
+    } finally {
+      setIsCheckingSupabase(false);
+    }
+  };
+
+  const handleSyncAllToSupabase = async () => {
+    setIsSyncingSupabase(true);
+    try {
+      const res = await syncAllProductsToCloud(products);
+      if (res.success) {
+        setSyncFeedback({
+          type: 'success',
+          text: `Sincronização concluída com sucesso! ${res.count} produtos sincronizados com o Supabase.`,
+        });
+        checkSupabaseStatus();
+      } else {
+        setSyncFeedback({
+          type: 'error',
+          text: `Erro ao sincronizar: ${res.error || 'Verifique se a tabela "products" foi criada no Supabase.'}`,
+        });
+      }
+    } catch (err: any) {
+      setSyncFeedback({
+        type: 'error',
+        text: `Falha na sincronização: ${err?.message || err}`,
+      });
+    } finally {
+      setIsSyncingSupabase(false);
+    }
+  };
+
+  const handleReloadFromSupabase = async () => {
+    setIsLoadingFromSupabase(true);
+    try {
+      const res = await loadProductsFromCloud();
+      if (res.success && res.products && res.products.length > 0) {
+        if (onImportProducts) {
+          onImportProducts(res.products);
+        }
+        setSyncFeedback({
+          type: 'success',
+          text: `${res.products.length} produtos carregados diretamente do Supabase na nuvem!`,
+        });
+        checkSupabaseStatus();
+      } else {
+        setSyncFeedback({
+          type: 'error',
+          text: 'Nenhum produto encontrado no Supabase ou conexão indisponível.',
+        });
+      }
+    } catch (err: any) {
+      setSyncFeedback({
+        type: 'error',
+        text: `Erro ao carregar do Supabase: ${err?.message || err}`,
+      });
+    } finally {
+      setIsLoadingFromSupabase(false);
     }
   };
 
@@ -218,6 +289,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     banners: 'Banners da Vitrine',
     analytics: 'Métricas & Tráfego',
     users: 'Membros & Tutores',
+    supabase: 'Banco Supabase & Nuvem',
     settings: 'Configurações',
   };
 
@@ -227,6 +299,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     { id: 'banners' as AdminSection, label: 'Banners', icon: ImageIcon, count: banners.length },
     { id: 'analytics' as AdminSection, label: 'Métricas', icon: BarChart3 },
     { id: 'users' as AdminSection, label: 'Membros', icon: Users, count: registeredUsers.length },
+    { id: 'supabase' as AdminSection, label: 'Supabase', icon: Cloud, isLive: supabaseStatus?.connected },
     { id: 'settings' as AdminSection, label: 'Ajustes', icon: Settings },
   ];
 
@@ -292,6 +365,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   >
                     <Icon className="w-3.5 h-3.5" />
                     <span>{btn.label}</span>
+                    {btn.isLive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                    )}
                     {typeof btn.count === 'number' && btn.count > 0 && (
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
@@ -393,6 +469,28 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             />
           )}
 
+          {activeSection === 'supabase' && (
+            <AdminSupabaseTab
+              products={products}
+              supabaseStatus={supabaseStatus}
+              isCheckingSupabase={isCheckingSupabase}
+              onCheckSupabaseStatus={checkSupabaseStatus}
+              isSyncingSupabase={isSyncingSupabase}
+              onSyncAllToSupabase={handleSyncAllToSupabase}
+              isLoadingFromSupabase={isLoadingFromSupabase}
+              onReloadFromSupabase={handleReloadFromSupabase}
+              syncFeedback={syncFeedback}
+              onClearSyncFeedback={() => setSyncFeedback(null)}
+              onDownloadBackup={handleDownloadBackupJson}
+              onImportBackupFile={handleImportBackupFile}
+              onRestoreStarterCatalog={handleRestoreStarterCatalog}
+              sqlSchema={sqlSchema || SUPABASE_SQL_SCHEMA}
+              onSaveCredentials={() => {
+                checkSupabaseStatus();
+              }}
+            />
+          )}
+
           {activeSection === 'settings' && (
             <AdminSettingsTab
               affiliateSettings={affiliateSettings}
@@ -402,7 +500,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               onDownloadBackup={handleDownloadBackupJson}
               onImportBackupFile={handleImportBackupFile}
               onRestoreStarterCatalog={handleRestoreStarterCatalog}
-              sqlSchema={sqlSchema}
+              sqlSchema={sqlSchema || SUPABASE_SQL_SCHEMA}
+              onNavigateToSupabase={() => setActiveSection('supabase')}
             />
           )}
         </div>

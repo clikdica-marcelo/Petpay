@@ -24,7 +24,8 @@ export type AdminSection =
   | 'banners' 
   | 'analytics' 
   | 'users' 
-  | 'settings';
+  | 'settings'
+  | 'supabase';
 
 interface AdminOverviewProps {
   products: Product[];
@@ -102,6 +103,15 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       actionLabel: 'Ver Membros',
     },
     {
+      id: 'supabase' as AdminSection,
+      title: 'Banco Supabase & Nuvem',
+      description: 'Conexão em tempo real com o banco de dados Supabase e sincronismo automático com a Vercel.',
+      badge: supabaseStatus?.connected ? 'Conectado & Sincronizado' : 'Configurar Conexão',
+      icon: Cloud,
+      iconColor: supabaseStatus?.connected ? 'text-emerald-700 bg-emerald-100' : 'text-amber-800 bg-amber-100',
+      actionLabel: 'Gerenciar Supabase',
+    },
+    {
       id: 'settings' as AdminSection,
       title: 'Configurações & Segurança',
       description: 'IDs de parceiro, taxa de comissão estimada e alteração de senha de administrador.',
@@ -123,14 +133,22 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                 Painel Administrativo Oficial
               </span>
               {supabaseStatus?.connected ? (
-                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('supabase')}
+                  className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 cursor-pointer transition-colors"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Nuvem Sincronizada
-                </span>
+                  Nuvem Sincronizada · Gerenciar
+                </button>
               ) : (
-                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Armazenamento Local
-                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('supabase')}
+                  className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer transition-colors"
+                >
+                  Modo Local · Conectar Supabase →
+                </button>
               )}
             </div>
             <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">

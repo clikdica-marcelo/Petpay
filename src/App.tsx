@@ -15,6 +15,12 @@ import { Footer } from './components/Footer';
 import { INITIAL_PRODUCTS, CATEGORY_LABELS, DEFAULT_BANNERS } from './data/mockProducts';
 import { Product, ProductCategory, AffiliateSettings, Banner, UserAccount } from './types';
 import { formatBRL } from './utils/currency';
+import { 
+  loadProductsFromCloud, 
+  syncProductToCloud, 
+  deleteProductFromCloud, 
+  syncAllProductsToCloud 
+} from './utils/supabaseClient';
 
 import { 
   ShoppingBag, 
@@ -64,21 +70,15 @@ export default function App() {
     }
   }, [favorites]);
 
-  // Initial load from server/Supabase on mount
+  // Initial load from cloud (Supabase or API) on mount
   useEffect(() => {
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.success && Array.isArray(data.products) && data.products.length > 0) {
-          if (data.source === 'supabase') {
-            setProducts(data.products);
-          } else {
-            // Memory source: if local storage was empty or default, use server products
-            setProducts(prev => prev && prev.length > 0 ? prev : data.products);
-          }
+    loadProductsFromCloud()
+      .then(res => {
+        if (res.success && Array.isArray(res.products) && res.products.length > 0) {
+          setProducts(res.products);
         }
       })
-      .catch(err => console.log('Error initializing products from API:', err));
+      .catch(err => console.log('Error initializing products from cloud:', err));
   }, []);
 
   const [banners, setBanners] = useState<Banner[]>(() => {
@@ -234,39 +234,25 @@ export default function App() {
   // Product CRUD actions for Admin
   const handleAddProduct = (newProd: Product) => {
     setProducts((prev) => [newProd, ...prev]);
-    fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newProd)
-    }).catch(err => console.error('Error syncing new product to server:', err));
+    syncProductToCloud(newProd);
   };
 
   const handleBulkImportProducts = (newProds: Product[]) => {
     setProducts((prev) => {
       const merged = [...newProds, ...prev];
-      fetch('/api/supabase/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products: merged })
-      }).catch(err => console.error('Error syncing bulk products to server:', err));
+      syncAllProductsToCloud(merged);
       return merged;
     });
   };
 
   const handleUpdateProduct = (updated: Product) => {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    fetch(`/api/products/${encodeURIComponent(updated.id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
-    }).catch(err => console.error('Error updating product on server:', err));
+    syncProductToCloud(updated);
   };
 
   const handleDeleteProduct = (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
-    fetch(`/api/products/${encodeURIComponent(productId)}`, {
-      method: 'DELETE'
-    }).catch(err => console.error('Error deleting product on server:', err));
+    deleteProductFromCloud(productId);
   };
 
   const handleUpdateSettings = async (newSettings: AffiliateSettings) => {
