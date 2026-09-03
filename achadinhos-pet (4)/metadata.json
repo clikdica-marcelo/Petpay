@@ -1,0 +1,7 @@
+{
+  "name": "Achadinhos Pet",
+  "description": "Vitrine 100% pública e anônima de produtos e achadinhos pet sem necessidade de cadastro, com departamentos oficiais, cupons de desconto, redirecionamento direto para lojas oficiais e painel de gerenciamento de produtos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
