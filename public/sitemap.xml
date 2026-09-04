@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Página Inicial Oficial -->
+  <url>
+    <loc>https://achadinhospet.net/</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Departamentos & Categorias Oficiais -->
+  <url>
+    <loc>https://achadinhospet.net/?categoria=alimentacao</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?categoria=cuidados_especiais</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?categoria=saude_bem_estar</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?categoria=cama_banheiro</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?categoria=acessorios</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?categoria=outros</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Filtros Curados e Ofertas Especiais -->
+  <url>
+    <loc>https://achadinhospet.net/?filtro=ofertas-relampago</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?filtro=destaques</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?filtro=frete-gratis</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Produtos em Destaque com Suporte a Google Images -->
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-alim-001</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Comedouro e Bebedouro Automático Gravidade 3.8L para Pets</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-alim-002</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
+      <image:title>Petisco Bifinho Dental Snack Anti-Tártaro 500g Sabor Carne e Ervas</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-cuid-001</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-cuid-002</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-saude-001</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-cama-001</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/?produto=pet-acess-001</loc>
+    <lastmod>2026-09-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

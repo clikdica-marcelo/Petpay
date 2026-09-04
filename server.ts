@@ -1103,6 +1103,97 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
     });
   });
 
+  // Dynamic Sitemap XML for Google Search Console & SEO
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const siteUrl = "https://achadinhospet.net";
+      const categories = [
+        'alimentacao',
+        'cuidados_especiais',
+        'saude_bem_estar',
+        'cama_banheiro',
+        'acessorios',
+        'outros'
+      ];
+
+      // Fetch latest products from Supabase or in-memory
+      let productsList = inMemoryProducts;
+      const { client, isConfigured } = getSupabase();
+      if (isConfigured && client) {
+        try {
+          const { data, error } = await client.from('products').select('*');
+          if (!error && Array.isArray(data) && data.length > 0) {
+            productsList = data.map(r => mapDbToProduct(r));
+          }
+        } catch (e) {
+          // Use in-memory fallback
+        }
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+
+      // Homepage
+      xml += `  <url>\n    <loc>${siteUrl}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+
+      // Categories
+      categories.forEach(cat => {
+        xml += `  <url>\n    <loc>${siteUrl}/?categoria=${cat}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+      });
+
+      // Special Curated Filters
+      const filters = ['ofertas-relampago', 'destaques', 'frete-gratis'];
+      filters.forEach(fil => {
+        xml += `  <url>\n    <loc>${siteUrl}/?filtro=${fil}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
+      });
+
+      // Products
+      productsList.forEach(p => {
+        const prodId = encodeURIComponent(p.id);
+        xml += `  <url>\n`;
+        xml += `    <loc>${siteUrl}/?produto=${prodId}</loc>\n`;
+        xml += `    <lastmod>${today}</lastmod>\n`;
+        xml += `    <changefreq>weekly</changefreq>\n`;
+        xml += `    <priority>0.8</priority>\n`;
+        if (p.imageUrl) {
+          const escapedImg = p.imageUrl.replace(/&/g, '&amp;');
+          const escapedTitle = (p.title || 'Produto Pet').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          xml += `    <image:image>\n      <image:loc>${escapedImg}</image:loc>\n      <image:title>${escapedTitle}</image:title>\n    </image:image>\n`;
+        }
+        xml += `  </url>\n`;
+      });
+
+      xml += `</urlset>`;
+
+      res.header('Content-Type', 'application/xml; charset=utf-8');
+      res.send(xml);
+    } catch (err: any) {
+      res.status(500).send("Erro ao gerar sitemap");
+    }
+  });
+
+  // Robots.txt
+  app.get("/robots.txt", (req, res) => {
+    const robots = `User-agent: *
+Allow: /
+Disallow: /api/
+
+# Googlebot
+User-agent: Googlebot
+Allow: /
+
+# Bingbot
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://achadinhospet.net/sitemap.xml
+`;
+    res.header('Content-Type', 'text/plain; charset=utf-8');
+    res.send(robots);
+  });
+
   // Vite integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

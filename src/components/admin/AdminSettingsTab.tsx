@@ -16,7 +16,10 @@ import {
   Upload,
   RotateCcw,
   Copy,
-  Code
+  Code,
+  Search,
+  Globe,
+  ExternalLink
 } from 'lucide-react';
 import { AffiliateSettings, Product } from '../../types';
 
@@ -52,12 +55,28 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   const [tempSettings, setTempSettings] = useState<AffiliateSettings>(affiliateSettings);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
+  const [copiedSitemap, setCopiedSitemap] = useState(false);
+  const [copiedRobots, setCopiedRobots] = useState(false);
 
   const handleCopySql = () => {
     if (!sqlSchema) return;
     navigator.clipboard.writeText(sqlSchema);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
+  };
+
+  const handleCopySitemapUrl = () => {
+    const sitemapUrl = `${window.location.origin}/sitemap.xml`;
+    navigator.clipboard.writeText(sitemapUrl);
+    setCopiedSitemap(true);
+    setTimeout(() => setCopiedSitemap(false), 2500);
+  };
+
+  const handleCopyRobotsUrl = () => {
+    const robotsUrl = `${window.location.origin}/robots.txt`;
+    navigator.clipboard.writeText(robotsUrl);
+    setCopiedRobots(true);
+    setTimeout(() => setCopiedRobots(false), 2500);
   };
 
   // Password change state
@@ -423,6 +442,111 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             </pre>
           </div>
         )}
+      </div>
+
+      {/* SEO, Google Search Console & Sitemap */}
+      <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-stone-100 pb-3">
+          <Search className="w-5 h-5 text-amber-700" />
+          <div>
+            <h4 className="font-bold text-stone-900 text-sm">
+              SEO & Indexação no Google Search Console
+            </h4>
+            <p className="text-[11px] text-stone-500">
+              Arquivos otimizados para busca orgânica, ranqueamento de ofertas e indexação pelo Googlebot.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* Sitemap Box */}
+          <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 flex flex-col justify-between gap-2">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-amber-700" />
+                  Sitemap XML
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                  Google & Bing
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500">
+                Lista todas as categorias, páginas e {products.length} produtos para os robôs do Google.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={handleCopySitemapUrl}
+                className="flex-1 px-2.5 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                {copiedSitemap ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedSitemap ? 'URL Copiada!' : 'Copiar URL do Sitemap'}</span>
+              </button>
+              <a
+                href="/sitemap.xml"
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg flex items-center justify-center transition-colors shadow-2xs"
+                title="Abrir sitemap.xml"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Robots.txt Box */}
+          <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 flex flex-col justify-between gap-2">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                  Robots.txt
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                  Liberado
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500">
+                Instrui os rastreadores a indexar todas as ofertas públicas e aponta o sitemap.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={handleCopyRobotsUrl}
+                className="flex-1 px-2.5 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                {copiedRobots ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedRobots ? 'URL Copiada!' : 'Copiar URL Robots'}</span>
+              </button>
+              <a
+                href="/robots.txt"
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg flex items-center justify-center transition-colors shadow-2xs"
+                title="Abrir robots.txt"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Console Guide Box */}
+        <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-950 space-y-1.5">
+          <span className="font-bold block text-amber-900 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-amber-700" />
+            Como enviar ao Google Search Console:
+          </span>
+          <ol className="list-decimal pl-4 space-y-1 text-amber-900/90 leading-relaxed">
+            <li>Acesse o <strong>Google Search Console</strong> com sua conta Google.</li>
+            <li>Adicione a propriedade com o domínio oficial do seu site: <code>https://achadinhospet.net</code>.</li>
+            <li>No menu lateral, clique em <strong>Sitemaps</strong>.</li>
+            <li>No campo de envio, digite <code>sitemap.xml</code> e clique em <strong>Enviar</strong>.</li>
+          </ol>
+        </div>
       </div>
     </div>
   );
