@@ -246,8 +246,8 @@ let affiliateSettings = {
   defaultUtmSource: "achadinhos_pet_portal",
   commissionRateEstimate: 8.5,
   storeName: "Achadinhos Pet",
-  storeDomain: "achadinhospet.com.br",
-  contactEmail: "contato@achadinhospet.com.br"
+  storeDomain: "achadinhospet.net",
+  contactEmail: "clikdica@gmail.com"
 };
 
 // Users / Community Store
@@ -334,6 +334,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+  app.use(express.static(path.join(process.cwd(), "public")));
 
   // API Endpoints
   app.get("/api/health", (req, res) => {
