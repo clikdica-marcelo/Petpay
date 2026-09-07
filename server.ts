@@ -1185,6 +1185,14 @@ Disallow: /api/
 User-agent: Googlebot
 Allow: /
 
+# Google Favicon Crawler
+User-agent: Google-Favicon
+Allow: /
+
+# Googlebot Image Crawler
+User-agent: Googlebot-Image
+Allow: /
+
 # Bingbot
 User-agent: Bingbot
 Allow: /
