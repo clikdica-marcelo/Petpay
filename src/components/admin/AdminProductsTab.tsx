@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Package, 
   Search, 
@@ -10,7 +10,8 @@ import {
   Tag, 
   Filter, 
   X,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { Product, ProductCategory } from '../../types';
 import { OFFICIAL_CATEGORIES, CATEGORY_LABELS } from '../../data/mockProducts';
@@ -34,6 +35,22 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+
+  const selectedProductToDelete = useMemo(() => {
+    if (!productToDelete) return null;
+    return products.find(p => p.id === productToDelete) || null;
+  }, [products, productToDelete]);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && productToDelete) {
+        setProductToDelete(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [productToDelete]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -149,32 +166,6 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           )}
         </div>
       </div>
-
-      {/* Delete confirmation alert dialog if active */}
-      {productToDelete && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-center justify-between gap-3 animate-in fade-in">
-          <div className="text-xs">
-            <strong>Confirma a exclusão deste produto?</strong>
-            <p className="text-rose-700 text-[11px]">
-              O item será removido da vitrine imediatamente.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setProductToDelete(null)}
-              className="px-3 py-1.5 bg-white border border-rose-200 text-stone-700 hover:bg-stone-50 font-bold text-xs rounded-lg cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => handleDeleteConfirm(productToDelete)}
-              className="px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs rounded-lg cursor-pointer"
-            >
-              Sim, Excluir
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Products Table Container */}
       <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-2xs">
@@ -298,6 +289,106 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Floating Confirmation Modal Dialog for Product Deletion */}
+      {productToDelete && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setProductToDelete(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+        >
+          <div 
+            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-stone-200 p-6 overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500" />
+
+            {/* Close button */}
+            <button
+              onClick={() => setProductToDelete(null)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
+              title="Fechar (Esc)"
+              aria-label="Fechar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header with icon and title */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-xs ring-4 ring-rose-50">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="pr-6">
+                <h3 id="delete-dialog-title" className="text-base font-bold text-stone-900 leading-snug">
+                  Excluir Produto?
+                </h3>
+                <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+                  Tem certeza de que deseja remover este item? Ele será retirado da vitrine e do banco de dados na nuvem.
+                </p>
+              </div>
+            </div>
+
+            {/* Product Card Preview inside Modal */}
+            {selectedProductToDelete && (
+              <div className="mt-4 p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3">
+                <img
+                  src={selectedProductToDelete.imageUrl}
+                  alt={selectedProductToDelete.title}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&w=150&q=80';
+                  }}
+                  className="w-14 h-14 rounded-xl object-cover border border-stone-200 shrink-0 shadow-2xs"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
+                    {selectedProductToDelete.title}
+                  </h4>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="text-xs font-extrabold text-amber-900">
+                      {formatBRL(selectedProductToDelete.price)}
+                    </span>
+                    <span className="text-[10px] text-stone-600 font-semibold px-2 py-0.5 bg-white border border-stone-200 rounded-md">
+                      {CATEGORY_LABELS[selectedProductToDelete.category]?.shortLabel || selectedProductToDelete.category}
+                    </span>
+                    {selectedProductToDelete.sellerName && (
+                      <span className="text-[10px] text-stone-400 truncate max-w-[120px]">
+                        {selectedProductToDelete.sellerName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3.5 flex items-center gap-2 text-[11px] text-stone-500">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Esta ação é definitiva e removerá o produto imediatamente.</span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteConfirm(productToDelete)}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Excluir Produto</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
