@@ -11,9 +11,13 @@ import { AdminAuthModal } from './components/AdminAuthModal';
 import { AuthModal } from './components/AuthModal';
 import { FavoritesDrawer } from './components/FavoritesDrawer';
 import { PetHealthSection } from './components/PetHealthSection';
+import { BlogSection } from './components/BlogSection';
+import { BlogArticleView } from './components/BlogArticleView';
+import { BlogCatalogModal } from './components/BlogCatalogModal';
 import { Footer } from './components/Footer';
-import { INITIAL_PRODUCTS, CATEGORY_LABELS, DEFAULT_BANNERS } from './data/mockProducts';
-import { Product, ProductCategory, AffiliateSettings, Banner, UserAccount } from './types';
+import { INITIAL_PRODUCTS, CATEGORY_LABELS, DEFAULT_BANNERS, PURGED_DEMO_PRODUCT_IDS } from './data/mockProducts';
+import { INITIAL_BLOG_POSTS } from './data/blogPosts';
+import { Product, ProductCategory, AffiliateSettings, Banner, UserAccount, BlogPost } from './types';
 import { formatBRL } from './utils/currency';
 import { deduplicateProducts, mergeProductsUnique } from './utils/productHelpers';
 import { 
@@ -22,6 +26,44 @@ import {
   deleteProductFromCloud, 
   syncAllProductsToCloud 
 } from './utils/supabaseClient';
+
+const DELETED_IDS_STORAGE_KEY = 'achadinhospet_deleted_ids';
+
+function getDeletedProductIds(): Set<string> {
+  const ids = new Set<string>(PURGED_DEMO_PRODUCT_IDS);
+  try {
+    const saved = localStorage.getItem(DELETED_IDS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(id => ids.add(String(id)));
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return ids;
+}
+
+function recordDeletedProductId(id: string) {
+  try {
+    const current = getDeletedProductIds();
+    current.add(id);
+    localStorage.setItem(DELETED_IDS_STORAGE_KEY, JSON.stringify(Array.from(current)));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function removeDeletedProductId(id: string) {
+  try {
+    const current = getDeletedProductIds();
+    current.delete(id);
+    localStorage.setItem(DELETED_IDS_STORAGE_KEY, JSON.stringify(Array.from(current)));
+  } catch (e) {
+    // ignore
+  }
+}
 
 import { 
   ShoppingBag, 
@@ -37,20 +79,35 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // Products state
+  // Products state - only real registered products, strictly excluding deleted items
   const [products, setProducts] = useState<Product[]>(() => {
+    const deletedIds = getDeletedProductIds();
     try {
       const saved = localStorage.getItem('achadinhospet_products');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return deduplicateProducts(parsed);
+          // Strictly filter out any deleted products or purged demo items
+          const cleanSaved = deduplicateProducts(parsed).filter(p => !deletedIds.has(p.id));
+          if (cleanSaved.length > 0) {
+            return cleanSaved.map(p => {
+              if (p.id === 'pet-saude-001') {
+                return {
+                  ...p,
+                  imageUrl: 'https://down-br.img.susercontent.com/file/br-11134207-7r98o-m6f8gc8db7fr71@resize_w900_nl.webp',
+                  shopeeUrl: 'https://s.shopee.com.br/5VVm7yZBAa',
+                  affiliateUrl: 'https://s.shopee.com.br/5VVm7yZBAa'
+                };
+              }
+              return p;
+            });
+          }
         }
       }
     } catch (e) {
       console.warn('Error reading stored products:', e);
     }
-    return deduplicateProducts(INITIAL_PRODUCTS);
+    return deduplicateProducts(INITIAL_PRODUCTS).filter(p => !deletedIds.has(p.id));
   });
 
   // Filters and navigation state
@@ -96,7 +153,16 @@ export default function App() {
     loadProductsFromCloud()
       .then(res => {
         if (res.success && Array.isArray(res.products) && res.products.length > 0) {
-          setProducts(prev => mergeProductsUnique(prev, res.products));
+          const deletedIds = getDeletedProductIds();
+          // Filter out ANY product the user deleted or demo products
+          const cleanCloud = res.products.filter(p => !deletedIds.has(p.id));
+          if (cleanCloud.length > 0) {
+            setProducts(prev => {
+              const currentDeleted = getDeletedProductIds();
+              const merged = mergeProductsUnique(prev, cleanCloud);
+              return merged.filter(p => !currentDeleted.has(p.id));
+            });
+          }
         }
       })
       .catch(err => console.log('Error initializing products from cloud:', err));
@@ -105,7 +171,16 @@ export default function App() {
   const [banners, setBanners] = useState<Banner[]>(() => {
     const saved = localStorage.getItem('pet_achadinhos_banners');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasEditorial = parsed.some((b: Banner) => b.blogPostSlug || b.id === 'banner-blog-segredo-felino');
+          if (!hasEditorial) {
+            return [...DEFAULT_BANNERS.filter(b => b.blogPostSlug), ...parsed];
+          }
+          return parsed;
+        }
+      } catch (e) { /* fallback */ }
     }
     return DEFAULT_BANNERS;
   });
@@ -113,6 +188,114 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pet_achadinhos_banners', JSON.stringify(banners));
   }, [banners]);
+
+  // Blog Posts State
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
+    try {
+      const saved = localStorage.getItem('achadinhospet_blog_posts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((p: BlogPost) => {
+            if (p.id === 'post-segredo-felino-agua-corrente') {
+              return {
+                ...p,
+                author: {
+                  name: 'Redação Achadinhos Pet',
+                  role: 'Curadoria de Saúde & Bem-Estar Pet',
+                  avatarUrl: 'https://i.imgur.com/g4qHahz.png'
+                },
+                recommendedProductIds: ['pet-saude-001']
+              };
+            }
+            return p;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading stored blog posts:', e);
+    }
+    return INITIAL_BLOG_POSTS;
+  });
+
+  const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
+  const [isBlogCatalogOpen, setIsBlogCatalogOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('achadinhospet_blog_posts', JSON.stringify(blogPosts));
+    } catch (e) {
+      console.warn('Error saving blog posts:', e);
+    }
+  }, [blogPosts]);
+
+  // Handle URL /blog/:slug routing and popstate
+  useEffect(() => {
+    const handleUrlRoute = () => {
+      const path = window.location.pathname;
+      if (path.startsWith('/blog/')) {
+        const slug = path.replace('/blog/', '').replace(/\/$/, '');
+        const found = blogPosts.find((p) => p.slug === slug);
+        if (found) {
+          setSelectedBlogPost(found);
+        }
+      } else {
+        setSelectedBlogPost(null);
+      }
+    };
+
+    handleUrlRoute();
+
+    const onPopState = () => {
+      handleUrlRoute();
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [blogPosts]);
+
+  const handleOpenBlogPost = (post: BlogPost) => {
+    setSelectedBlogPost(post);
+    try {
+      window.history.pushState({ postId: post.id }, '', `/blog/${post.slug}`);
+    } catch (e) {
+      // browser env
+    }
+  };
+
+  const handleOpenBlogPostBySlug = (slug: string) => {
+    const post = blogPosts.find(p => p.slug === slug || p.id === slug);
+    if (post) {
+      handleOpenBlogPost(post);
+    }
+  };
+
+  const handleBackFromBlog = () => {
+    setSelectedBlogPost(null);
+    try {
+      window.history.pushState(null, '', '/');
+    } catch (e) {
+      // browser env
+    }
+  };
+
+  const handleAddBlogPost = (newPost: BlogPost) => {
+    setBlogPosts(prev => [newPost, ...prev.filter(p => p.id !== newPost.id)]);
+  };
+
+  const handleUpdateBlogPost = (updatedPost: BlogPost) => {
+    setBlogPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+    if (selectedBlogPost?.id === updatedPost.id) {
+      setSelectedBlogPost(updatedPost);
+    }
+  };
+
+  const handleDeleteBlogPost = (postId: string) => {
+    setBlogPosts(prev => prev.filter(p => p.id !== postId));
+    if (selectedBlogPost?.id === postId) {
+      handleBackFromBlog();
+    }
+  };
 
   const handleSelectProductForBanner = (product: Product) => {
     const newBanner: Banner = {
@@ -254,11 +437,13 @@ export default function App() {
 
   // Product CRUD actions for Admin
   const handleAddProduct = (newProd: Product) => {
+    removeDeletedProductId(newProd.id);
     setProducts((prev) => deduplicateProducts([newProd, ...prev.filter(p => p.id !== newProd.id)]));
     syncProductToCloud(newProd);
   };
 
   const handleBulkImportProducts = (newProds: Product[]) => {
+    newProds.forEach(p => removeDeletedProductId(p.id));
     setProducts((prev) => {
       const merged = mergeProductsUnique(prev, newProds);
       syncAllProductsToCloud(merged);
@@ -272,7 +457,9 @@ export default function App() {
   };
 
   const handleDeleteProduct = (productId: string) => {
+    recordDeletedProductId(productId);
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+    setFavorites((prev) => prev.filter((p) => p.id !== productId));
     deleteProductFromCloud(productId);
   };
 
@@ -368,6 +555,7 @@ export default function App() {
         onSearchChange={setSearchQuery}
         favoritesCount={favorites.length}
         onOpenFavorites={() => setIsFavoritesOpen(true)}
+        onOpenBlog={() => setIsBlogCatalogOpen(true)}
         onOpenAdmin={() => {
           if (isAdminLogged || currentUser?.role === 'admin') {
             setIsAdminOpen(true);
@@ -380,8 +568,21 @@ export default function App() {
         isAdminUnlocked={isAdminLogged || currentUser?.role === 'admin'}
       />
 
-
-      {/* Hero Banner Showcase (Quadro de Exposição Rotativo) */}
+      {/* Main View: Article Reader or Home Catalog */}
+      {selectedBlogPost ? (
+        <BlogArticleView
+          post={selectedBlogPost}
+          allProducts={products}
+          onBack={handleBackFromBlog}
+          onOpenProductDetails={handleOpenDetails}
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            handleBackFromBlog();
+          }}
+        />
+      ) : (
+        <>
+          {/* Hero Banner Showcase (Quadro de Exposição Rotativo) */}
       {isAdminLogged && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex items-center justify-end">
           <button
@@ -403,6 +604,7 @@ export default function App() {
         products={products}
         onProductClick={handleOpenDetails}
         onShopeeClick={handleShopeeClick}
+        onOpenBlogPostSlug={handleOpenBlogPostBySlug}
         banners={banners}
         hiddenSlideIds={hiddenDynamicSlides}
       />
@@ -576,6 +778,13 @@ export default function App() {
 
       </main>
 
+      {/* Blog & Dicas Pet Section (Featuring Inaugural Post) */}
+      <BlogSection
+        posts={blogPosts}
+        onOpenPost={handleOpenBlogPost}
+        onOpenAllPosts={() => setIsBlogCatalogOpen(true)}
+      />
+
       {/* Health & Wellness AI Section */}
       <div id="health-section">
         <PetHealthSection
@@ -583,10 +792,18 @@ export default function App() {
           onOpenProductDetails={handleOpenDetails}
         />
       </div>
+    </>
+  )}
 
       {/* Footer */}
       <Footer
-        onSelectCategory={setSelectedCategory}
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat);
+          if (selectedBlogPost) {
+            handleBackFromBlog();
+          }
+        }}
+        onOpenBlog={() => setIsBlogCatalogOpen(true)}
         onOpenAdmin={() => {
           if (isAdminLogged || currentUser?.role === 'admin') {
             setIsAdminOpen(true);
@@ -678,6 +895,22 @@ export default function App() {
         onAddBanner={handleAddBanner}
         onUpdateBanner={handleUpdateBanner}
         onDeleteBanner={handleDeleteBanner}
+        blogPosts={blogPosts}
+        onAddBlogPost={handleAddBlogPost}
+        onUpdateBlogPost={handleUpdateBlogPost}
+        onDeleteBlogPost={handleDeleteBlogPost}
+        onPreviewBlogPost={(p) => {
+          setIsAdminOpen(false);
+          handleOpenBlogPost(p);
+        }}
+      />
+
+      {/* Blog Catalog Modal */}
+      <BlogCatalogModal
+        isOpen={isBlogCatalogOpen}
+        onClose={() => setIsBlogCatalogOpen(false)}
+        posts={blogPosts}
+        onSelectPost={handleOpenBlogPost}
       />
 
       <FavoritesDrawer

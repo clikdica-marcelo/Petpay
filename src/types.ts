@@ -91,6 +91,7 @@ export interface CuratedKit {
 
 export interface Banner {
   productObject?: Product;
+  blogPostSlug?: string;
   id: string;
   badge: string;
   badgeColor: string;
@@ -111,6 +112,42 @@ export interface UserAccount {
   petName?: string;
   petType?: 'dog' | 'cat' | 'both' | 'other';
   createdAt: string;
+}
+
+export interface BlogContentSection {
+  type: 'paragraph' | 'heading2' | 'heading3' | 'callout' | 'quote' | 'product_highlight' | 'tips_list' | 'faq';
+  text?: string;
+  title?: string;
+  items?: string[];
+  productId?: string;
+  calloutType?: 'warning' | 'info' | 'tip' | 'success';
+  faqAnswers?: { question: string; answer: string }[];
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  excerpt: string;
+  category: string;
+  readTime: string;
+  publishDate: string;
+  updatedDate?: string;
+  author: {
+    name: string;
+    role: string;
+    avatarUrl?: string;
+  };
+  coverImage: string;
+  tags: string[];
+  recommendedProductIds: string[];
+  contentSections: BlogContentSection[];
+  seoDescription: string;
+  seoKeywords: string[];
+  viewsCount?: number;
+  likesCount?: number;
+  featured?: boolean;
 }
 
 

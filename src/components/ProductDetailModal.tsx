@@ -84,6 +84,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <img
                 src={activeImage}
                 alt={product.title}
+                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
               />
               {product.discountPercent && product.discountPercent > 0 && (
@@ -105,7 +106,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       selectedImageIndex === idx ? 'border-amber-700 scale-105' : 'border-stone-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
+                    <img src={img} alt="Thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface PetAchadinhosLogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   theme?: 'light' | 'dark';
   className?: string;
 }
@@ -15,6 +15,7 @@ export const PetAchadinhosLogo: React.FC<PetAchadinhosLogoProps> = ({
   const logoUrl = "https://i.imgur.com/g4qHahz.png";
 
   const sizeClasses = {
+    xs: 'h-6 w-6 sm:h-7 sm:w-7',
     sm: 'h-8 w-8 sm:h-9 sm:w-9',
     md: 'h-10 w-10 sm:h-12 sm:w-12',
     lg: 'h-14 w-14 sm:h-16 sm:w-16'

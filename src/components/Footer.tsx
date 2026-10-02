@@ -19,6 +19,7 @@ interface FooterProps {
   onSelectCategory: (category: ProductCategory | 'todas') => void;
   onOpenAdmin: () => void;
   onOpenAuth?: () => void;
+  onOpenBlog?: () => void;
   currentUser?: UserAccount | null;
 }
 
@@ -26,6 +27,7 @@ export const Footer: React.FC<FooterProps> = ({
   onSelectCategory,
   onOpenAdmin,
   onOpenAuth,
+  onOpenBlog,
   currentUser
 }) => {
   return (
@@ -91,6 +93,16 @@ export const Footer: React.FC<FooterProps> = ({
               Recursos do Portal
             </h4>
             <ul className="space-y-2 text-stone-400">
+              {onOpenBlog && (
+                <li>
+                  <button 
+                    onClick={onOpenBlog}
+                    className="text-amber-400 hover:text-amber-300 font-semibold transition-colors cursor-pointer text-left flex items-center gap-1"
+                  >
+                    <span>Blog Achadinhos Pet (Novidade)</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <span className="text-stone-400">
                   Cupons & Ofertas Relâmpago

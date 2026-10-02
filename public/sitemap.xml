@@ -56,9 +56,24 @@
   <!-- Filtros Curados e Ofertas Especiais -->
   <url>
     <loc>https://achadinhospet.net/?filtro=ofertas-relampago</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-10-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+  </url>
+
+  <!-- Blog & Matérias Especiais -->
+  <url>
+    <loc>https://achadinhospet.net/blog/o-segredo-felino-que-evita-o-veterinario-agua-corrente</loc>
+    <lastmod>2026-10-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://achadinhospet.net/blog/o-que-seu-pet-faz-quando-voce-sai-de-casa</loc>
+    <lastmod>2026-10-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
   </url>
 
   <url>

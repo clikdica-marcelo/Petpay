@@ -12,15 +12,17 @@ import {
   TrendingUp, 
   Cloud, 
   Download, 
-  CheckCircle2,
-  ExternalLink
+  CheckCircle2, 
+  ExternalLink,
+  BookOpen
 } from 'lucide-react';
-import { Product, Banner, UserAccount } from '../../types';
+import { Product, Banner, UserAccount, BlogPost } from '../../types';
 
 export type AdminSection = 
   | 'overview' 
   | 'products' 
   | 'add_product' 
+  | 'blog'
   | 'banners' 
   | 'analytics' 
   | 'users' 
@@ -32,6 +34,7 @@ interface AdminOverviewProps {
   banners?: Banner[];
   registeredUsers: UserAccount[];
   analyticsData: any;
+  blogPostsCount?: number;
   supabaseStatus: {
     configured: boolean;
     connected: boolean;
@@ -49,6 +52,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   banners = [],
   registeredUsers,
   analyticsData,
+  blogPostsCount = 2,
   supabaseStatus,
   onNavigate,
   onOpenBulkImport,
@@ -63,6 +67,15 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       icon: Package,
       iconColor: 'text-amber-700 bg-amber-100',
       actionLabel: 'Abrir Produtos',
+    },
+    {
+      id: 'blog' as AdminSection,
+      title: 'Blog & Dicas Pet (Novidade)',
+      description: 'Crie e edite artigos com alta curiosidade, respaldo veterinário e links de afiliados integrados.',
+      badge: `${blogPostsCount} matérias publicadas`,
+      icon: BookOpen,
+      iconColor: 'text-rose-700 bg-rose-100',
+      actionLabel: 'Gerenciar Blog ✍️',
     },
     {
       id: 'bulk_import' as any,

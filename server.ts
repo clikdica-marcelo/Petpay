@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
@@ -1168,6 +1169,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
         xml += `  <url>\n    <loc>${siteUrl}/?filtro=${fil}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
       });
 
+      // Blog Articles
+      const blogPosts = [
+        'o-segredo-felino-que-evita-o-veterinario-agua-corrente',
+        'o-que-seu-pet-faz-quando-voce-sai-de-casa'
+      ];
+      blogPosts.forEach(slug => {
+        xml += `  <url>\n    <loc>${siteUrl}/blog/${slug}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.95</priority>\n  </url>\n`;
+      });
+
       // Products
       productsList.forEach(p => {
         const prodId = encodeURIComponent(p.id);
@@ -1221,6 +1231,29 @@ Sitemap: https://achadinhospet.net/sitemap.xml
     res.send(robots);
   });
 
+  // SEO metadata injector for blog articles and Google Search indexation
+  function injectSeoMetadata(rawHtml: string, urlPath: string): string {
+    if (urlPath.includes('/blog/o-segredo-felino-que-evita-o-veterinario-agua-corrente')) {
+      const blogTitle = "O Segredo Felino que Evita o Veterinário: Por Que Seu Gato Ignora Água Parada? | Achadinhos Pet";
+      const blogDesc = "Por que gatos não bebem água na tigela? Entenda o instinto ancestral do deserto, os riscos renais e como fazer seu gato beber até 3x mais água.";
+      const blogCanonical = "https://achadinhospet.net/blog/o-segredo-felino-que-evita-o-veterinario-agua-corrente";
+      const blogImage = "https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1200&q=80";
+
+      return rawHtml
+        .replace(/<title>.*?<\/title>/i, `<title>${blogTitle}</title>`)
+        .replace(/<meta name="description" content=".*?" \/>/i, `<meta name="description" content="${blogDesc}" />`)
+        .replace(/<link rel="canonical" href=".*?" \/>/i, `<link rel="canonical" href="${blogCanonical}" />`)
+        .replace(/<meta property="og:title" content=".*?" \/>/i, `<meta property="og:title" content="${blogTitle}" />`)
+        .replace(/<meta property="og:description" content=".*?" \/>/i, `<meta property="og:description" content="${blogDesc}" />`)
+        .replace(/<meta property="og:url" content=".*?" \/>/i, `<meta property="og:url" content="${blogCanonical}" />`)
+        .replace(/<meta property="og:image" content=".*?" \/>/i, `<meta property="og:image" content="${blogImage}" />`)
+        .replace(/<meta name="twitter:title" content=".*?" \/>/i, `<meta name="twitter:title" content="${blogTitle}" />`)
+        .replace(/<meta name="twitter:description" content=".*?" \/>/i, `<meta name="twitter:description" content="${blogDesc}" />`)
+        .replace(/<meta name="twitter:image" content=".*?" \/>/i, `<meta name="twitter:image" content="${blogImage}" />`);
+    }
+    return rawHtml;
+  }
+
   // Vite integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -1230,9 +1263,16 @@ Sitemap: https://achadinhospet.net/sitemap.xml
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { index: false }));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        let html = fs.readFileSync(indexPath, "utf-8");
+        html = injectSeoMetadata(html, req.originalUrl || req.path);
+        res.send(html);
+      } else {
+        res.sendFile(indexPath);
+      }
     });
   }
 

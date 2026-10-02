@@ -12,9 +12,10 @@ import {
   Layers,
   Sparkles,
   ChevronRight,
-  Cloud
+  Cloud,
+  BookOpen
 } from 'lucide-react';
-import { Product, AffiliateSettings, Banner, UserAccount } from '../types';
+import { Product, AffiliateSettings, Banner, UserAccount, BlogPost } from '../types';
 import { INITIAL_PRODUCTS } from '../data/mockProducts';
 
 // Sub-components
@@ -22,6 +23,7 @@ import { AdminOverview, AdminSection } from './admin/AdminOverview';
 import { AdminProductsTab } from './admin/AdminProductsTab';
 import { AdminAddProductTab } from './admin/AdminAddProductTab';
 import { AdminBannersTab } from './admin/AdminBannersTab';
+import { AdminBlogTab } from './admin/AdminBlogTab';
 import { AdminAnalyticsTab } from './admin/AdminAnalyticsTab';
 import { AdminUsersTab } from './admin/AdminUsersTab';
 import { AdminSettingsTab } from './admin/AdminSettingsTab';
@@ -49,6 +51,11 @@ interface AdminPanelModalProps {
   onAddBanner?: (banner: Banner) => void;
   onUpdateBanner?: (banner: Banner) => void;
   onDeleteBanner?: (bannerId: string) => void;
+  blogPosts?: BlogPost[];
+  onAddBlogPost?: (post: BlogPost) => void;
+  onUpdateBlogPost?: (post: BlogPost) => void;
+  onDeleteBlogPost?: (postId: string) => void;
+  onPreviewBlogPost?: (post: BlogPost) => void;
 }
 
 export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
@@ -65,6 +72,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onAddBanner,
   onUpdateBanner,
   onDeleteBanner,
+  blogPosts = [],
+  onAddBlogPost,
+  onUpdateBlogPost,
+  onDeleteBlogPost,
+  onPreviewBlogPost,
 }) => {
   // Navigation: Starts in the main overview hub
   const [activeSection, setActiveSection] = useState<AdminSection>('overview');
@@ -286,6 +298,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     overview: 'Página Principal',
     products: 'Catálogo de Produtos',
     add_product: 'Cadastrar Produto',
+    blog: 'Blog & Dicas Pet',
     banners: 'Banners da Vitrine',
     analytics: 'Métricas & Tráfego',
     users: 'Membros & Tutores',
@@ -296,6 +309,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const navButtons = [
     { id: 'overview' as AdminSection, label: 'Início', icon: Home },
     { id: 'products' as AdminSection, label: 'Produtos', icon: Package, count: products.length },
+    { id: 'blog' as AdminSection, label: 'Blog', icon: BookOpen, count: blogPosts.length },
     { id: 'banners' as AdminSection, label: 'Banners', icon: ImageIcon, count: banners.length },
     { id: 'analytics' as AdminSection, label: 'Métricas', icon: BarChart3 },
     { id: 'users' as AdminSection, label: 'Membros', icon: Users, count: registeredUsers.length },
@@ -417,10 +431,26 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               banners={banners}
               registeredUsers={registeredUsers}
               analyticsData={analyticsData}
+              blogPostsCount={blogPosts.length}
               supabaseStatus={supabaseStatus}
               onNavigate={(sec) => setActiveSection(sec)}
               onOpenBulkImport={() => setIsBulkImportOpen(true)}
               onDownloadBackup={handleDownloadBackupJson}
+            />
+          )}
+
+          {activeSection === 'blog' && (
+            <AdminBlogTab
+              posts={blogPosts}
+              onAddPost={onAddBlogPost || (() => {})}
+              onUpdatePost={onUpdateBlogPost || (() => {})}
+              onDeletePost={onDeleteBlogPost || (() => {})}
+              onPreviewPost={(p) => {
+                if (onPreviewBlogPost) {
+                  onPreviewBlogPost(p);
+                }
+              }}
+              allProducts={products}
             />
           )}
 

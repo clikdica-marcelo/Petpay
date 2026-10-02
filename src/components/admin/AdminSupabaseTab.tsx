@@ -17,7 +17,8 @@ import {
   Globe,
   ShieldCheck,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  Bot
 } from 'lucide-react';
 import { Product } from '../../types';
 import { 
@@ -63,10 +64,23 @@ export const AdminSupabaseTab: React.FC<AdminSupabaseTabProps> = ({
   onSaveCredentials,
 }) => {
   const [copiedSql, setCopiedSql] = useState(false);
+  const [copiedKeepalive, setCopiedKeepalive] = useState(false);
   const [inputUrl, setInputUrl] = useState('');
   const [inputKey, setInputKey] = useState('');
   const [isSavedLocal, setIsSavedLocal] = useState(false);
   const [showKeyInput, setShowKeyInput] = useState(false);
+
+  const creds = getSupabaseCredentials();
+  const keepaliveUrl = (creds.url || inputUrl) && (creds.key || inputKey)
+    ? `${(creds.url || inputUrl).replace(/\/$/, '')}/rest/v1/products?select=id&limit=1&apikey=${creds.key || inputKey}`
+    : '';
+
+  const handleCopyKeepalive = () => {
+    if (!keepaliveUrl) return;
+    navigator.clipboard.writeText(keepaliveUrl);
+    setCopiedKeepalive(true);
+    setTimeout(() => setCopiedKeepalive(false), 2500);
+  };
 
   // Initialize input fields with detected credentials
   useEffect(() => {
@@ -331,6 +345,74 @@ export const AdminSupabaseTab: React.FC<AdminSupabaseTabProps> = ({
             Vá na aba <strong>Deployments</strong> da Vercel, clique nos três pontinhos <code>...</code> e selecione <strong>Redeploy</strong> (sem cache).
           </div>
         </div>
+      </div>
+
+      {/* Robô Anti-Pausa Gratuito (UptimeRobot Keepalive) */}
+      <div className="p-5 rounded-2xl border bg-emerald-50/90 border-emerald-200 text-stone-800 space-y-3 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800 shrink-0">
+              <Bot className="w-5 h-5 text-emerald-700" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-emerald-950 text-xs">
+                  Robô Anti-Pausa 100% Grátis (UptimeRobot)
+                </h4>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 font-extrabold text-[10px] uppercase">
+                  Ativo & Recomendado
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800 mt-0.5">
+                O Supabase gratuito pode pausar após 7 dias sem atividade. Cadastre este monitor no UptimeRobot para fazer um ping leve automático e manter seu banco de dados sempre ligado.
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="https://uptimerobot.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 self-start sm:self-auto transition-colors shadow-2xs"
+          >
+            <span>Abrir UptimeRobot</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {keepaliveUrl ? (
+          <div className="space-y-2 pt-1">
+            <label className="text-[11px] font-bold text-emerald-950 block">
+              URL Direta de Consulta do Supabase (Copie e cole como URL do Monitor):
+            </label>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={keepaliveUrl}
+                className="w-full bg-white border border-emerald-300 rounded-xl px-3 py-2 text-[11px] text-stone-700 font-mono select-all focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+              />
+              <button
+                onClick={handleCopyKeepalive}
+                className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-colors shadow-2xs"
+              >
+                {copiedKeepalive ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedKeepalive ? 'Copiado!' : 'Copiar URL'}</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[10px] text-emerald-800 pt-0.5">
+              <span className="font-semibold">⚡ Monitor Type: <strong>HTTP(s)</strong></span>
+              <span>•</span>
+              <span className="font-semibold">⏱ Interval: <strong>a cada 10 ou 15 minutos</strong></span>
+              <span>•</span>
+              <span>Consumo mínimo: menos de 100 bytes por ping</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] text-emerald-800 italic">
+            Configure as credenciais do Supabase acima para gerar a URL de keepalive com sua chave.
+          </p>
+        )}
       </div>
 
       {/* SQL Script Box */}

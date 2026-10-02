@@ -22,10 +22,10 @@ import { formatBRL } from '../utils/currency';
 
 interface BannerHeroProps {
   onSelectCategory: (category: ProductCategory | 'todas') => void;
-
   products?: Product[];
   onProductClick?: (product: Product) => void;
   onShopeeClick?: (product: Product, source?: string) => void;
+  onOpenBlogPostSlug?: (slug: string) => void;
   banners?: Banner[];
   isAdminMode?: boolean;
   onEditBanner?: (banner: Banner) => void;
@@ -39,6 +39,7 @@ export const BannerHero: React.FC<BannerHeroProps> = ({
   products = [],
   onProductClick,
   onShopeeClick,
+  onOpenBlogPostSlug,
   banners,
   isAdminMode = false,
   onEditBanner,
@@ -106,6 +107,10 @@ export const BannerHero: React.FC<BannerHeroProps> = ({
   const banner = dynamicSlides[currentSlide] || dynamicSlides[0];
 
   const handleAction = () => {
+    if (banner.blogPostSlug && onOpenBlogPostSlug) {
+      onOpenBlogPostSlug(banner.blogPostSlug);
+      return;
+    }
     const prod = (banner as any).productObject || products.find(p => p.id === banner.id || p.title === banner.title);
     if (prod) {
       if (onShopeeClick) {

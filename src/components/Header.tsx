@@ -8,7 +8,8 @@ import {
   Flame,
   User,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 import { PetAchadinhosLogo } from './PetAchadinhosLogo';
 import { UserAccount } from '../types';
@@ -20,6 +21,7 @@ interface HeaderProps {
   onOpenFavorites: () => void;
   onOpenAdmin: () => void;
   onOpenAuth: () => void;
+  onOpenBlog?: () => void;
   currentUser: UserAccount | null;
   isAdminUnlocked?: boolean;
 }
@@ -31,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenFavorites,
   onOpenAdmin,
   onOpenAuth,
+  onOpenBlog,
   currentUser,
   isAdminUnlocked = false,
 }) => {
@@ -93,6 +96,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Blog Button */}
+            {onOpenBlog && (
+              <button
+                onClick={onOpenBlog}
+                className="px-3 sm:px-3.5 py-2 rounded-full border border-stone-200 hover:border-amber-700/40 bg-stone-50 hover:bg-amber-50/50 text-stone-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title="Acessar Blog & Dicas Pet"
+              >
+                <BookOpen className="w-4 h-4 text-amber-700" />
+                <span className="hidden sm:inline">Blog</span>
+              </button>
+            )}
+
             {/* Favorites Button */}
             <button
               onClick={onOpenFavorites}
