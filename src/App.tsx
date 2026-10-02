@@ -547,7 +547,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900">
+    <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900 overflow-x-hidden w-full">
       
       {/* Clean Sticky Header */}
       <Header
@@ -620,33 +620,33 @@ export default function App() {
       />
 
       {/* Main Catalog Container (Produtos listados imediatamente abaixo ao clicar) */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-8 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 w-full">
         
         {/* Flash Deals Highlight Strip (when on home/todas) */}
         {selectedCategory === 'todas' && curatedFilter === 'todos' && !searchQuery && flashDeals.length > 0 && (
-          <section className="mb-10 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-800 to-amber-950 text-white shadow-md border border-amber-700/30">
-            <div className="flex items-center justify-between mb-4">
+          <section className="mb-8 sm:mb-10 p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-800 to-amber-950 text-white shadow-md border border-amber-700/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-amber-400/20 text-amber-300">
-                  <Flame className="w-5 h-5 text-amber-300 animate-bounce" />
+                <span className="p-1.5 sm:p-2 rounded-xl bg-amber-400/20 text-amber-300">
+                  <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 animate-bounce" />
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                    <h2 className="text-base sm:text-xl font-black text-white tracking-tight">
                       Ofertas Relâmpago do Dia
                     </h2>
-                    <span className="text-[10px] uppercase font-bold bg-rose-600 px-2 py-0.5 rounded-full text-white">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold bg-rose-600 px-2 py-0.5 rounded-full text-white">
                       Tempo Limitado
                     </span>
                   </div>
-                  <p className="text-xs text-amber-200">
+                  <p className="text-[11px] sm:text-xs text-amber-200">
                     Descontos de até 50% verificados e com cupons ativos
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setCuratedFilter('promocoes')}
-                className="text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl"
+                className="text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl self-start sm:self-auto"
               >
                 <span>Ver todas as promoções</span>
                 <ArrowRight className="w-3.5 h-3.5" />

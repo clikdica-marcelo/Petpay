@@ -114,15 +114,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Card Body */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
+      <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
         <div>
           {/* Social Proof Stats */}
           <div className="flex items-center justify-between text-xs text-stone-500 mb-1.5">
-            <div className="flex items-center gap-1 text-emerald-700 font-semibold text-[11px]">
+            <div className="flex items-center gap-1 text-emerald-700 font-semibold text-[10px] sm:text-[11px]">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Verificado</span>
             </div>
-            <span className="text-[11px] font-medium text-stone-500">
+            <span className="text-[10px] sm:text-[11px] font-medium text-stone-500">
               {product.salesCount > 1000 ? `+${(product.salesCount / 1000).toFixed(1)}k comprados` : `${product.salesCount} comprados`}
             </span>
           </div>
@@ -133,21 +133,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               e.stopPropagation();
               onShopeeClick(product, 'Card Title');
             }}
-            className="text-sm font-bold text-stone-900 line-clamp-2 hover:text-amber-800 cursor-pointer transition-colors leading-snug mb-2 font-sans"
+            className="text-xs sm:text-sm font-bold text-stone-900 line-clamp-2 hover:text-amber-800 cursor-pointer transition-colors leading-snug mb-2 font-sans"
             title={product.title}
           >
             {product.title}
           </h3>
 
           {/* Tags / Coupons */}
-          <div className="flex flex-wrap gap-1 mb-3">
+          <div className="flex flex-wrap gap-1 mb-2.5 sm:mb-3">
             {product.tags.slice(0, 2).map((tag, i) => (
-              <span key={i} className="text-[10px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-md font-medium">
+              <span key={i} className="text-[9px] sm:text-[10px] bg-stone-100 text-stone-700 px-1.5 sm:px-2 py-0.5 rounded-md font-medium">
                 {tag}
               </span>
             ))}
             {product.couponAvailable && (
-              <span className="text-[10px] bg-amber-50 text-amber-900 border border-amber-300/80 px-2 py-0.5 rounded-md font-bold">
+              <span className="text-[9px] sm:text-[10px] bg-amber-50 text-amber-900 border border-amber-300/80 px-1.5 sm:px-2 py-0.5 rounded-md font-bold">
                 Cupom: {product.couponAvailable}
               </span>
             )}
@@ -155,25 +155,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Price & Action Button */}
-        <div className="pt-3 border-t border-stone-100 mt-1">
-          <div className="flex items-baseline justify-between mb-3">
+        <div className="pt-2.5 sm:pt-3 border-t border-stone-100 mt-1">
+          <div className="flex items-baseline justify-between mb-2.5 sm:mb-3">
             <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-black text-stone-950">
+              <div className="flex items-baseline gap-1.5 sm:gap-2">
+                <span className="text-lg sm:text-xl font-black text-stone-950">
                   {formatBRL(product.price)}
                 </span>
                 {product.originalPrice && (
-                  <span className="text-xs text-stone-400 line-through">
+                  <span className="text-[11px] sm:text-xs text-stone-400 line-through">
                     {formatBRL(product.originalPrice)}
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-stone-500 font-medium">Em até 12x no cartão</p>
+              <p className="text-[9px] sm:text-[10px] text-stone-500 font-medium">Em até 12x no cartão</p>
             </div>
 
             {product.discountPercent && product.discountPercent > 0 && typeof product.price === 'number' && typeof product.originalPrice === 'number' && (
-              <span className="text-[11px] font-extrabold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
-                Economize {formatBRL(product.originalPrice - product.price)}
+              <span className="text-[10px] sm:text-[11px] font-extrabold text-rose-600 bg-rose-50 px-1.5 sm:px-2 py-0.5 rounded-md">
+                -{product.discountPercent}%
               </span>
             )}
           </div>
@@ -185,7 +185,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 e.stopPropagation();
                 onShopeeClick(product, 'Card Grid');
               }}
-              className="col-span-4 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-700 hover:bg-amber-600 active:scale-[0.98] text-white font-bold text-xs shadow-sm hover:shadow-md transition-all cursor-pointer"
+              className="col-span-4 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-2.5 sm:px-3 rounded-xl bg-amber-700 hover:bg-amber-600 active:scale-[0.98] text-white font-bold text-xs shadow-sm hover:shadow-md transition-all cursor-pointer"
             >
               <span>Melhor Preço</span>
               <ExternalLink className="w-3.5 h-3.5" />

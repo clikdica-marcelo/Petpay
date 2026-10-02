@@ -30,13 +30,13 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
   const otherPosts = posts.filter(p => p.id !== featuredPost.id).slice(0, 3);
 
   return (
-    <section className="bg-white py-14 border-b border-stone-200" id="blog-section">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-white py-8 sm:py-14 border-b border-stone-200" id="blog-section">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div>
-            <div className="flex items-center gap-2 text-xs font-black text-amber-800 uppercase tracking-wider mb-1.5">
+            <div className="flex items-center gap-2 text-xs font-black text-amber-800 uppercase tracking-wider mb-1">
               <BookOpen className="w-4 h-4 text-amber-600" />
               <span>Blog & Dicas Pet</span>
               <span className="text-stone-300">·</span>
@@ -45,7 +45,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 Matéria em Destaque
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+            <h2 className="text-xl sm:text-3xl font-black text-stone-900 tracking-tight">
               Curiosidades, Saúde & Segredos Pet
             </h2>
             <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl">
@@ -65,14 +65,14 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
         </div>
 
         {/* Featured Debut Post - Magazine Style Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
           
           {/* Main Hero Article Card */}
           <div 
             onClick={() => onOpenPost(featuredPost)}
             className="lg:col-span-8 bg-stone-900 text-white rounded-3xl overflow-hidden shadow-lg border border-stone-800 hover:border-amber-500/60 transition-all cursor-pointer group flex flex-col justify-between"
           >
-            <div className="relative aspect-video sm:aspect-[21/9] lg:aspect-[16/8] overflow-hidden">
+            <div className="relative aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/8] overflow-hidden">
               <img 
                 src={featuredPost.coverImage} 
                 alt={featuredPost.title} 
@@ -81,34 +81,34 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
               <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
               
               {/* Badge Over Image */}
-              <div className="absolute top-4 left-4 flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500 text-stone-950 shadow-md">
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-2">
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-amber-500 text-stone-950 shadow-md">
                   Estreia do Blog
                 </span>
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20">
+                <span className="text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20">
                   {featuredPost.readTime}
                 </span>
               </div>
             </div>
 
-            <div className="p-6 sm:p-8 space-y-4 flex-1 flex flex-col justify-between">
+            <div className="p-4 sm:p-8 space-y-3 sm:space-y-4 flex-1 flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 text-xs text-amber-400 font-semibold mb-2">
+                <div className="flex items-center gap-2 text-xs text-amber-400 font-semibold mb-1.5 sm:mb-2">
                   <span>{featuredPost.category}</span>
                   <span className="text-stone-600">·</span>
                   <span className="text-stone-400">{featuredPost.publishDate}</span>
                 </div>
 
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight leading-snug group-hover:text-amber-300 transition-colors">
+                <h3 className="text-lg sm:text-2xl lg:text-3xl font-black text-white tracking-tight leading-snug group-hover:text-amber-300 transition-colors">
                   {featuredPost.title}
                 </h3>
 
-                <p className="text-stone-300 text-xs sm:text-sm mt-3 leading-relaxed line-clamp-3">
+                <p className="text-stone-300 text-xs sm:text-sm mt-2 sm:mt-3 leading-relaxed line-clamp-3">
                   {featuredPost.excerpt}
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-stone-800 flex items-center justify-between gap-4">
+              <div className="pt-3 sm:pt-4 border-t border-stone-800 flex flex-col xs:flex-row xs:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/20 p-1 shadow-xs flex items-center justify-center shrink-0">
                     <PetAchadinhosLogo size="xs" />
@@ -124,7 +124,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors self-end xs:self-auto">
                   <span>Ler Matéria Completa</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>

@@ -154,22 +154,23 @@ export const BlogArticleView: React.FC<BlogArticleViewProps> = ({
       )}
 
       {/* Top Breadcrumb & Navigation Bar */}
-      <div className="bg-white border-b border-stone-200 sticky top-16 z-30 shadow-2xs">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <div className="bg-white border-b border-stone-200 sticky top-[57px] sm:top-16 z-30 shadow-2xs">
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-stone-600 hover:text-amber-800 transition-colors cursor-pointer group"
+            className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold text-stone-600 hover:text-amber-800 transition-colors cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Voltar para o Portal</span>
+            <span>Voltar</span>
+            <span className="hidden sm:inline">para o Portal</span>
           </button>
 
           {/* Quick Action: Direct link to featured product or copy article link */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {mainProduct && (
               <button
                 onClick={(e) => handleBuyOnShopee(mainProduct, e)}
-                className="px-3.5 py-1.5 rounded-full bg-[#ee4d2d] hover:bg-[#d73211] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-1.5 rounded-full bg-[#ee4d2d] hover:bg-[#d73211] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                 title="Ir direto para a oferta na Shopee"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
@@ -192,10 +193,10 @@ export const BlogArticleView: React.FC<BlogArticleViewProps> = ({
       </div>
 
       {/* Main Article Header */}
-      <header className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-6">
-        {/* Anti-slop zero pill metadata */}
-        <div className="flex items-center gap-2 text-xs text-stone-500 font-medium mb-3">
-          <span className="font-bold text-amber-800 uppercase tracking-wider">{post.category}</span>
+      <header className="max-w-4xl mx-auto px-3.5 sm:px-6 pt-6 sm:pt-8 pb-5 sm:pb-6">
+        {/* Metadata */}
+        <div className="flex items-center flex-wrap gap-2 text-xs text-stone-500 font-medium mb-2.5 sm:mb-3">
+          <span className="font-bold text-amber-800 uppercase tracking-wider text-[11px] sm:text-xs">{post.category}</span>
           <span className="text-stone-300">·</span>
           <span>{post.publishDate}</span>
           <span className="text-stone-300">·</span>
@@ -206,10 +207,10 @@ export const BlogArticleView: React.FC<BlogArticleViewProps> = ({
         </div>
 
         {/* Title & Subtitle */}
-        <h1 className="text-2xl sm:text-4xl lg:text-[40px] font-black text-stone-900 tracking-tight leading-[1.18] mb-4">
+        <h1 className="text-xl sm:text-3xl lg:text-[40px] font-black text-stone-900 tracking-tight leading-[1.2] mb-3 sm:mb-4">
           {post.title}
         </h1>
-        <p className="text-base sm:text-lg text-stone-600 leading-relaxed font-normal">
+        <p className="text-sm sm:text-lg text-stone-600 leading-relaxed font-normal">
           {post.subtitle}
         </p>
 
