@@ -1,0 +1,27 @@
+[
+  {
+    "id": "banner-blog-segredo-felino",
+    "badge": "🔥 MATÉRIA EM ALTA • GUIA FELINO",
+    "badgeColor": "bg-amber-600 text-white",
+    "title": "O Segredo Felino que Evita o Veterinário: Por que seu gato ignora água parada?",
+    "subtitle": "Descubra o instinto ancestral do deserto, os riscos renais e como fazer seu gato beber até 3x mais água hoje mesmo.",
+    "ctaText": "Descobrir o Segredo Felino →",
+    "categoryTarget": "saude_bem_estar",
+    "bgGradient": "from-stone-950 via-stone-900 to-amber-950",
+    "image": "/cat_water_fountain_blog.jpg",
+    "highlightBadge": "Destaque Editorial da Redação",
+    "blogPostSlug": "o-segredo-felino-que-evita-o-veterinario-agua-corrente"
+  },
+  {
+    "id": "banner-fonte-silenciosa",
+    "badge": "DESTAQUE EM SAÚDE & BEM-ESTAR",
+    "badgeColor": "bg-orange-600 text-white",
+    "title": "Fonte Bebedouro Elétrica Ultra Silenciosa Bivolt",
+    "subtitle": "Água corrente e filtrada por carvão ativado. Estimula seu pet a beber 3x mais água e previne problemas renais.",
+    "ctaText": "Ver Oferta na Shopee Oficial",
+    "categoryTarget": "saude_bem_estar",
+    "bgGradient": "from-stone-900 via-stone-950 to-stone-900",
+    "image": "https://down-br.img.susercontent.com/file/br-11134207-7r98o-m6f8gc8db7fr71@resize_w900_nl.webp",
+    "highlightBadge": "Oferta Oficial Shopee"
+  }
+]

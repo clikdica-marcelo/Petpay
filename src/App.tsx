@@ -24,7 +24,11 @@ import {
   loadProductsFromCloud, 
   syncProductToCloud, 
   deleteProductFromCloud, 
-  syncAllProductsToCloud 
+  syncAllProductsToCloud,
+  saveBannersToCloud,
+  loadBannersFromCloud,
+  saveBlogPostsToCloud,
+  loadBlogPostsFromCloud
 } from './utils/supabaseClient';
 
 const DELETED_IDS_STORAGE_KEY = 'achadinhospet_deleted_ids';
@@ -140,37 +144,44 @@ export default function App() {
     }
   }, [favorites]);
 
-  // Initial load from cloud (Supabase or API) on mount
+  // Initial load from cloud (Supabase, Server API or Static Fallback) on mount
   useEffect(() => {
+    // 1. Products Sync
     loadProductsFromCloud()
       .then(res => {
         if (res.success && Array.isArray(res.products) && res.products.length > 0) {
           const deletedIds = getDeletedProductIds();
-          // Filter out ANY product the user deleted or demo products
           const cleanCloud = res.products.filter(p => !deletedIds.has(p.id));
           if (cleanCloud.length > 0) {
             setProducts(cleanCloud);
             try {
               localStorage.setItem('achadinhospet_products', JSON.stringify(cleanCloud));
-            } catch (e) {
-              // local storage quota
-            }
+            } catch (e) {}
           }
         }
       })
       .catch(err => console.log('Error initializing products from cloud:', err));
 
-    // Also sync banners from server API
-    fetch('/api/banners')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
-          const hasEditorial = data.banners.some((b: Banner) => b.blogPostSlug || b.id === 'banner-blog-segredo-felino');
-          if (!hasEditorial) {
-            setBanners([...DEFAULT_BANNERS.filter(b => b.blogPostSlug), ...data.banners]);
-          } else {
-            setBanners(data.banners);
-          }
+    // 2. Banners Sync
+    loadBannersFromCloud()
+      .then(res => {
+        if (res.success && Array.isArray(res.banners) && res.banners.length > 0) {
+          setBanners(res.banners);
+          try {
+            localStorage.setItem('pet_achadinhos_banners', JSON.stringify(res.banners));
+          } catch (e) {}
+        }
+      })
+      .catch(() => {});
+
+    // 3. Blog Posts Sync
+    loadBlogPostsFromCloud()
+      .then(res => {
+        if (res.success && Array.isArray(res.blogPosts) && res.blogPosts.length > 0) {
+          setBlogPosts(res.blogPosts);
+          try {
+            localStorage.setItem('achadinhospet_blog_posts', JSON.stringify(res.blogPosts));
+          } catch (e) {}
         }
       })
       .catch(() => {});
@@ -290,18 +301,30 @@ export default function App() {
   };
 
   const handleAddBlogPost = (newPost: BlogPost) => {
-    setBlogPosts(prev => [newPost, ...prev.filter(p => p.id !== newPost.id)]);
+    setBlogPosts(prev => {
+      const updated = [newPost, ...prev.filter(p => p.id !== newPost.id)];
+      saveBlogPostsToCloud(updated);
+      return updated;
+    });
   };
 
   const handleUpdateBlogPost = (updatedPost: BlogPost) => {
-    setBlogPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+    setBlogPosts(prev => {
+      const updated = prev.map(p => p.id === updatedPost.id ? updatedPost : p);
+      saveBlogPostsToCloud(updated);
+      return updated;
+    });
     if (selectedBlogPost?.id === updatedPost.id) {
       setSelectedBlogPost(updatedPost);
     }
   };
 
   const handleDeleteBlogPost = (postId: string) => {
-    setBlogPosts(prev => prev.filter(p => p.id !== postId));
+    setBlogPosts(prev => {
+      const updated = prev.filter(p => p.id !== postId);
+      saveBlogPostsToCloud(updated);
+      return updated;
+    });
     if (selectedBlogPost?.id === postId) {
       handleBackFromBlog();
     }
@@ -325,18 +348,25 @@ export default function App() {
   };
 
   const handleAddBanner = (newBanner: Banner) => {
-    setBanners((prev) => [newBanner, ...prev]);
+    setBanners((prev) => {
+      const updated = [newBanner, ...prev];
+      saveBannersToCloud(updated);
+      return updated;
+    });
   };
 
   const handleUpdateBanner = (updatedBanner: Banner) => {
     setBanners((prev) => {
       const exists = prev.some(b => b.id === updatedBanner.id);
+      let updated: Banner[];
       if (exists) {
-        return prev.map((b) => b.id === updatedBanner.id ? updatedBanner : b);
+        updated = prev.map((b) => b.id === updatedBanner.id ? updatedBanner : b);
       } else {
-        const newBanner = { ...updatedBanner, id: `banner-${Date.now()}` };
-        return [newBanner, ...prev];
+        const newBanner = { ...updatedBanner, id: updatedBanner.id || `banner-${Date.now()}` };
+        updated = [newBanner, ...prev];
       }
+      saveBannersToCloud(updated);
+      return updated;
     });
   };
 
@@ -348,7 +378,11 @@ export default function App() {
         return updated;
       });
     } else {
-      setBanners((prev) => prev.filter((b) => b.id !== bannerId));
+      setBanners((prev) => {
+        const updated = prev.filter((b) => b.id !== bannerId);
+        saveBannersToCloud(updated);
+        return updated;
+      });
     }
   };
 

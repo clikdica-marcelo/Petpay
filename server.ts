@@ -19,10 +19,16 @@ let supabaseClient: SupabaseClient | null = null;
 let serverSupabaseConfig: { url: string; key: string } = { url: '', key: '' };
 
 const DATA_DIR = path.join(process.cwd(), "data");
+const PUBLIC_DIR = path.join(process.cwd(), "public");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
+const PUBLIC_PRODUCTS_FILE = path.join(PUBLIC_DIR, "products.json");
 const SUPABASE_CONFIG_FILE = path.join(DATA_DIR, "supabase_config.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+const PUBLIC_SETTINGS_FILE = path.join(PUBLIC_DIR, "settings.json");
 const BANNERS_FILE = path.join(DATA_DIR, "banners.json");
+const PUBLIC_BANNERS_FILE = path.join(PUBLIC_DIR, "banners.json");
+const BLOG_POSTS_FILE = path.join(DATA_DIR, "blog_posts.json");
+const PUBLIC_BLOG_POSTS_FILE = path.join(PUBLIC_DIR, "blog_posts.json");
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -38,6 +44,7 @@ function savePersistedProducts(products: any[]) {
   ensureDataDir();
   try {
     fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
+    fs.writeFileSync(PUBLIC_PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
   } catch (e) {
     console.warn("Error saving products.json:", e);
   }
@@ -56,6 +63,7 @@ function savePersistedSettings(settings: any) {
   ensureDataDir();
   try {
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+    fs.writeFileSync(PUBLIC_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
   } catch (e) {
     console.warn("Error saving settings.json:", e);
   }
@@ -65,8 +73,50 @@ function savePersistedBanners(banners: any[]) {
   ensureDataDir();
   try {
     fs.writeFileSync(BANNERS_FILE, JSON.stringify(banners, null, 2), 'utf-8');
+    fs.writeFileSync(PUBLIC_BANNERS_FILE, JSON.stringify(banners, null, 2), 'utf-8');
   } catch (e) {
     console.warn("Error saving banners.json:", e);
+  }
+
+  // Also sync to Supabase site_settings in background if configured
+  const { client, isConfigured } = getSupabase();
+  if (isConfigured && client) {
+    Promise.resolve(
+      client
+        .from('site_settings')
+        .upsert({
+          key: 'banners',
+          value: banners,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' })
+    ).catch((err: any) => {
+      console.warn("[Supabase] site_settings banners server sync warning:", err);
+    });
+  }
+}
+
+function savePersistedBlogPosts(blogPosts: any[]) {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(BLOG_POSTS_FILE, JSON.stringify(blogPosts, null, 2), 'utf-8');
+    fs.writeFileSync(PUBLIC_BLOG_POSTS_FILE, JSON.stringify(blogPosts, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn("Error saving blog_posts.json:", e);
+  }
+
+  const { client, isConfigured } = getSupabase();
+  if (isConfigured && client) {
+    Promise.resolve(
+      client
+        .from('site_settings')
+        .upsert({
+          key: 'blog_posts',
+          value: blogPosts,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' })
+    ).catch((err: any) => {
+      console.warn("[Supabase] site_settings blog_posts server sync warning:", err);
+    });
   }
 }
 
@@ -321,7 +371,7 @@ const DEFAULT_BANNERS = [
     ctaText: 'Descobrir o Segredo Felino →',
     categoryTarget: 'saude_bem_estar',
     bgGradient: 'from-stone-950 via-stone-900 to-amber-950',
-    image: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1200&q=80',
+    image: '/cat_water_fountain_blog.jpg',
     highlightBadge: 'Destaque Editorial da Redação',
     blogPostSlug: 'o-segredo-felino-que-evita-o-veterinario-agua-corrente'
   },
@@ -341,6 +391,7 @@ const DEFAULT_BANNERS = [
 
 let inMemoryProducts: any[] = [...DEFAULT_STARTER_PRODUCTS];
 let inMemoryBanners: any[] = [...DEFAULT_BANNERS];
+let inMemoryBlogPosts: any[] = [];
 
 function loadPersistedData() {
   ensureDataDir();
@@ -390,6 +441,24 @@ function loadPersistedData() {
       const parsed = JSON.parse(fs.readFileSync(BANNERS_FILE, 'utf-8'));
       if (Array.isArray(parsed) && parsed.length > 0) {
         inMemoryBanners = parsed;
+      } else {
+        inMemoryBanners = [...DEFAULT_BANNERS];
+        savePersistedBanners(inMemoryBanners);
+      }
+    } else {
+      inMemoryBanners = [...DEFAULT_BANNERS];
+      savePersistedBanners(inMemoryBanners);
+    }
+  } catch (e) {
+    inMemoryBanners = [...DEFAULT_BANNERS];
+  }
+
+  // Load Blog Posts
+  try {
+    if (fs.existsSync(BLOG_POSTS_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(BLOG_POSTS_FILE, 'utf-8'));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryBlogPosts = parsed;
       }
     }
   } catch (e) {}
@@ -500,9 +569,10 @@ async function startServer() {
   // Load persisted server-side data from disk (products, banners, settings, Supabase config)
   loadPersistedData();
 
-  // If Supabase is configured, sync initial products in background on startup
+  // If Supabase is configured, sync initial products and site settings in background on startup
   const { client: initSupabaseClient, isConfigured: initSupabaseConfigured } = getSupabase();
   if (initSupabaseConfigured && initSupabaseClient) {
+    // Sync products
     Promise.resolve(
       initSupabaseClient
         .from('products')
@@ -517,6 +587,30 @@ async function startServer() {
       }
     }).catch((err: any) => {
       console.warn("[Supabase Startup] Background load warning:", err);
+    });
+
+    // Sync site_settings (banners and blog posts)
+    Promise.resolve(
+      initSupabaseClient
+        .from('site_settings')
+        .select('*')
+    ).then(({ data, error }: any) => {
+      if (!error && Array.isArray(data)) {
+        const bannersRow = data.find((r: any) => r.key === 'banners');
+        if (bannersRow && bannersRow.value && Array.isArray(bannersRow.value) && bannersRow.value.length > 0) {
+          inMemoryBanners = bannersRow.value;
+          savePersistedBanners(bannersRow.value);
+          console.log(`[Supabase Startup] Loaded ${bannersRow.value.length} banners from Supabase site_settings.`);
+        }
+        const blogRow = data.find((r: any) => r.key === 'blog_posts');
+        if (blogRow && blogRow.value && Array.isArray(blogRow.value) && blogRow.value.length > 0) {
+          inMemoryBlogPosts = blogRow.value;
+          savePersistedBlogPosts(blogRow.value);
+          console.log(`[Supabase Startup] Loaded ${blogRow.value.length} blog posts from Supabase site_settings.`);
+        }
+      }
+    }).catch((err: any) => {
+      console.warn("[Supabase Startup] site_settings background load error:", err);
     });
   }
 
@@ -1020,6 +1114,26 @@ async function startServer() {
         res.json({ success: true, count: banners.length });
       } else {
         res.status(400).json({ error: "Banners deve ser um array." });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Blog Posts API (persisted across all users)
+  app.get("/api/blog-posts", (req, res) => {
+    res.json({ success: true, blogPosts: inMemoryBlogPosts });
+  });
+
+  app.post("/api/blog-posts", (req, res) => {
+    try {
+      const { blogPosts } = req.body;
+      if (Array.isArray(blogPosts)) {
+        inMemoryBlogPosts = blogPosts;
+        savePersistedBlogPosts(blogPosts);
+        res.json({ success: true, count: blogPosts.length });
+      } else {
+        res.status(400).json({ error: "Blog posts deve ser um array." });
       }
     } catch (err: any) {
       res.status(500).json({ error: err.message });

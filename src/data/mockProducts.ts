@@ -316,7 +316,7 @@ export const DEFAULT_BANNERS: Banner[] = [
     ctaText: 'Descobrir o Segredo Felino →',
     categoryTarget: 'saude_bem_estar',
     bgGradient: 'from-stone-950 via-stone-900 to-amber-950',
-    image: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1200&q=80',
+    image: '/cat_water_fountain_blog.jpg',
     highlightBadge: 'Destaque Editorial da Redação',
     blogPostSlug: 'o-segredo-felino-que-evita-o-veterinario-agua-corrente'
   },

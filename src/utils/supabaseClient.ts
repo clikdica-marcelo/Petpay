@@ -511,7 +511,173 @@ export async function syncAllProductsToCloud(products: Product[]): Promise<{ suc
   }
 }
 
-// 12. Complete SQL Schema for User
+// 12. Save Banners across Supabase, Server API, and Local Storage
+export async function saveBannersToCloud(banners: any[]): Promise<boolean> {
+  // Always update local cache
+  try {
+    localStorage.setItem('pet_achadinhos_banners', JSON.stringify(banners));
+  } catch (e) {}
+
+  let cloudSuccess = false;
+
+  // 1. Supabase direct sync via site_settings or banners table
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { error } = await client
+        .from('site_settings')
+        .upsert({
+          key: 'banners',
+          value: banners,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+      if (!error) {
+        cloudSuccess = true;
+      }
+    } catch (e) {
+      console.warn('[Supabase] site_settings banners upsert error:', e);
+    }
+  }
+
+  // 2. Server API sync (/api/banners)
+  try {
+    const res = await fetch('/api/banners', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ banners }),
+    });
+    if (res.ok) {
+      cloudSuccess = true;
+    }
+  } catch (e) {}
+
+  return cloudSuccess;
+}
+
+// 13. Load Banners from Cloud (Supabase -> Server API -> Static /banners.json -> Local)
+export async function loadBannersFromCloud(): Promise<{ success: boolean; banners: any[]; source: string }> {
+  // Step 1: Try direct Supabase
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'banners')
+        .maybeSingle();
+
+      if (!error && data && data.value && Array.isArray(data.value) && data.value.length > 0) {
+        return { success: true, banners: data.value, source: 'supabase' };
+      }
+    } catch (e) {}
+  }
+
+  // Step 2: Try Server API
+  try {
+    const res = await fetch('/api/banners');
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+        return { success: true, banners: data.banners, source: 'api' };
+      }
+    }
+  } catch (e) {}
+
+  // Step 3: Try static /banners.json
+  try {
+    const staticRes = await fetch('/banners.json');
+    if (staticRes.ok) {
+      const staticData = await staticRes.json();
+      if (Array.isArray(staticData) && staticData.length > 0) {
+        return { success: true, banners: staticData, source: 'static' };
+      }
+    }
+  } catch (e) {}
+
+  return { success: false, banners: [], source: 'none' };
+}
+
+// 14. Save Blog Posts across Supabase, Server API, and Local Storage
+export async function saveBlogPostsToCloud(blogPosts: any[]): Promise<boolean> {
+  try {
+    localStorage.setItem('achadinhospet_blog_posts', JSON.stringify(blogPosts));
+  } catch (e) {}
+
+  let cloudSuccess = false;
+
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { error } = await client
+        .from('site_settings')
+        .upsert({
+          key: 'blog_posts',
+          value: blogPosts,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+      if (!error) {
+        cloudSuccess = true;
+      }
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch('/api/blog-posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blogPosts }),
+    });
+    if (res.ok) {
+      cloudSuccess = true;
+    }
+  } catch (e) {}
+
+  return cloudSuccess;
+}
+
+// 15. Load Blog Posts from Cloud
+export async function loadBlogPostsFromCloud(): Promise<{ success: boolean; blogPosts: any[]; source: string }> {
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'blog_posts')
+        .maybeSingle();
+
+      if (!error && data && data.value && Array.isArray(data.value) && data.value.length > 0) {
+        return { success: true, blogPosts: data.value, source: 'supabase' };
+      }
+    } catch (e) {}
+  }
+
+  try {
+    const res = await fetch('/api/blog-posts');
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.blogPosts) && data.blogPosts.length > 0) {
+        return { success: true, blogPosts: data.blogPosts, source: 'api' };
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const staticRes = await fetch('/blog_posts.json');
+    if (staticRes.ok) {
+      const staticData = await staticRes.json();
+      if (Array.isArray(staticData) && staticData.length > 0) {
+        return { success: true, blogPosts: staticData, source: 'static' };
+      }
+    }
+  } catch (e) {}
+
+  return { success: false, blogPosts: [], source: 'none' };
+}
+
+// 16. Complete SQL Schema for User
 export const SUPABASE_SQL_SCHEMA = `-- ============================================================
 -- PORTAL DE ACHADINHOS E OFERTAS PET - SUPABASE POSTGRESQL SCHEMA
 -- Execute este script no SQL Editor do seu painel Supabase
@@ -574,15 +740,23 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS badges TEXT[] DEFAULT '{}';
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS additional_images TEXT[] DEFAULT '{}';
 
--- 2. Índices de busca rápida
+-- 2. Tabela de Configurações Globais e Banners (Sincronização entre todos os dispositivos)
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Índices de busca rápida
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
 CREATE INDEX IF NOT EXISTS idx_products_featured ON public.products(is_featured);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON public.products(created_at DESC);
 
--- 3. Habilitar Row Level Security (RLS)
+-- 4. Habilitar Row Level Security (RLS)
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- 4. Políticas de Acesso Público (Permite o site na Vercel ler e salvar produtos)
+-- 5. Políticas de Acesso Público para Produtos
 DROP POLICY IF EXISTS "Permitir Leitura Pública de Produtos" ON public.products;
 CREATE POLICY "Permitir Leitura Pública de Produtos" 
   ON public.products FOR SELECT 
@@ -592,6 +766,20 @@ CREATE POLICY "Permitir Leitura Pública de Produtos"
 DROP POLICY IF EXISTS "Permitir Inserção e Edição de Produtos" ON public.products;
 CREATE POLICY "Permitir Inserção e Edição de Produtos" 
   ON public.products FOR ALL 
+  TO anon, authenticated 
+  USING (true) 
+  WITH CHECK (true);
+
+-- 6. Políticas de Acesso Público para Configurações e Banners
+DROP POLICY IF EXISTS "Permitir Leitura Pública de Configurações" ON public.site_settings;
+CREATE POLICY "Permitir Leitura Pública de Configurações" 
+  ON public.site_settings FOR SELECT 
+  TO anon, authenticated 
+  USING (true);
+
+DROP POLICY IF EXISTS "Permitir Inserção e Edição de Configurações" ON public.site_settings;
+CREATE POLICY "Permitir Inserção e Edição de Configurações" 
+  ON public.site_settings FOR ALL 
   TO anon, authenticated 
   USING (true) 
   WITH CHECK (true);
