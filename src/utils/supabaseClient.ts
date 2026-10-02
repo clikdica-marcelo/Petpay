@@ -20,6 +20,9 @@ export interface SupabaseStatusResult {
   needPolicy?: boolean;
 }
 
+// In-memory cache for server-provided config
+let cachedServerConfig: { url: string; key: string } | null = null;
+
 // 1. Get current Supabase credentials from any available source
 export function getSupabaseCredentials(): { url: string; key: string; source: SupabaseConfig['source'] } {
   // Priority 1: User-configured in localStorage (from Admin UI)
@@ -42,7 +45,12 @@ export function getSupabaseCredentials(): { url: string; key: string; source: Su
     return { url: metaUrl, key: metaKey, source: 'vite_env' };
   }
 
-  // Priority 3: process.env (replaced by Vite define at build time for Vercel)
+  // Priority 3: Server-provided config cached in memory
+  if (cachedServerConfig && cachedServerConfig.url && cachedServerConfig.key) {
+    return { url: cachedServerConfig.url, key: cachedServerConfig.key, source: 'env' };
+  }
+
+  // Priority 4: process.env (replaced by Vite define at build time for Vercel)
   try {
     const procUrl = (typeof process !== 'undefined' && process.env ? process.env.SUPABASE_URL : '')?.trim();
     const procKey = (typeof process !== 'undefined' && process.env ? (process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY) : '')?.trim();
@@ -63,12 +71,25 @@ export function saveSupabaseCredentials(url: string, key: string) {
   if (cleanUrl && cleanKey) {
     localStorage.setItem('pet_achadinhos_supabase_url', cleanUrl);
     localStorage.setItem('pet_achadinhos_supabase_key', cleanKey);
+    cachedServerConfig = { url: cleanUrl, key: cleanKey };
   } else {
     localStorage.removeItem('pet_achadinhos_supabase_url');
     localStorage.removeItem('pet_achadinhos_supabase_key');
+    cachedServerConfig = null;
   }
   // Reset cached client
   cachedClient = null;
+
+  // Persist to server backend so all visitors and browsers share the connection
+  try {
+    fetch('/api/supabase/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: cleanUrl, key: cleanKey })
+    }).catch(() => {});
+  } catch (e) {
+    // ignore
+  }
 }
 
 // 3. Singleton Supabase Client
@@ -312,6 +333,21 @@ export async function checkSupabaseStatus(): Promise<SupabaseStatusResult> {
 
 // 8. Fetch products (Supabase direct or /api/products)
 export async function loadProductsFromCloud(): Promise<{ success: boolean; products: Product[]; source: 'supabase' | 'api' | 'none'; error?: string }> {
+  // If client not yet configured, attempt to discover server-configured Supabase credentials
+  if (!getSupabaseCredentials().url) {
+    try {
+      const configRes = await fetch('/api/supabase/config');
+      if (configRes.ok) {
+        const configJson = await configRes.json();
+        if (configJson && configJson.configured && configJson.url && configJson.key) {
+          cachedServerConfig = { url: configJson.url.trim(), key: configJson.key.trim() };
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   // Try direct Supabase query first if client is configured
   const client = getSupabaseClient();
   if (client) {
@@ -333,7 +369,7 @@ export async function loadProductsFromCloud(): Promise<{ success: boolean; produ
     }
   }
 
-  // Fallback: try server API
+  // Primary server fallback: fetch products from server API (reads from Supabase / server persistence)
   try {
     const res = await fetch('/api/products');
     const contentType = res.headers.get('content-type') || '';

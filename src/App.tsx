@@ -157,15 +157,31 @@ export default function App() {
           // Filter out ANY product the user deleted or demo products
           const cleanCloud = res.products.filter(p => !deletedIds.has(p.id));
           if (cleanCloud.length > 0) {
-            setProducts(prev => {
-              const currentDeleted = getDeletedProductIds();
-              const merged = mergeProductsUnique(prev, cleanCloud);
-              return merged.filter(p => !currentDeleted.has(p.id));
-            });
+            setProducts(cleanCloud);
+            try {
+              localStorage.setItem('achadinhospet_products', JSON.stringify(cleanCloud));
+            } catch (e) {
+              // local storage quota
+            }
           }
         }
       })
       .catch(err => console.log('Error initializing products from cloud:', err));
+
+    // Also sync banners from server API
+    fetch('/api/banners')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.banners) && data.banners.length > 0) {
+          const hasEditorial = data.banners.some((b: Banner) => b.blogPostSlug || b.id === 'banner-blog-segredo-felino');
+          if (!hasEditorial) {
+            setBanners([...DEFAULT_BANNERS.filter(b => b.blogPostSlug), ...data.banners]);
+          } else {
+            setBanners(data.banners);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const [banners, setBanners] = useState<Banner[]>(() => {
@@ -186,7 +202,9 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem('pet_achadinhos_banners', JSON.stringify(banners));
+    try {
+      localStorage.setItem('pet_achadinhos_banners', JSON.stringify(banners));
+    } catch (e) {}
   }, [banners]);
 
   // Blog Posts State

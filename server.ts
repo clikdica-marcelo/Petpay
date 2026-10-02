@@ -16,9 +16,63 @@ function getAI() {
 
 // Lazy-initialize Supabase Client
 let supabaseClient: SupabaseClient | null = null;
+let serverSupabaseConfig: { url: string; key: string } = { url: '', key: '' };
+
+const DATA_DIR = path.join(process.cwd(), "data");
+const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
+const SUPABASE_CONFIG_FILE = path.join(DATA_DIR, "supabase_config.json");
+const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+const BANNERS_FILE = path.join(DATA_DIR, "banners.json");
+
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    try {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    } catch (e) {
+      console.warn("Could not create data dir:", e);
+    }
+  }
+}
+
+function savePersistedProducts(products: any[]) {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn("Error saving products.json:", e);
+  }
+}
+
+function savePersistedSupabaseConfig(config: { url: string; key: string }) {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(SUPABASE_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn("Error saving supabase_config.json:", e);
+  }
+}
+
+function savePersistedSettings(settings: any) {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn("Error saving settings.json:", e);
+  }
+}
+
+function savePersistedBanners(banners: any[]) {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(BANNERS_FILE, JSON.stringify(banners, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn("Error saving banners.json:", e);
+  }
+}
+
 function getSupabase(): { client: SupabaseClient | null; url?: string; isConfigured: boolean } {
-  const url = process.env.SUPABASE_URL?.trim();
-  const key = (process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
+  const url = (process.env.SUPABASE_URL || serverSupabaseConfig.url)?.trim();
+  const key = (process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || serverSupabaseConfig.key)?.trim();
   
   if (!url || !key) {
     return { client: null, url: url || undefined, isConfigured: false };
@@ -227,7 +281,119 @@ async function resilientSupabaseUpsert(client: SupabaseClient, rawRows: any[]): 
 }
 
 // In-memory fallback product store
-let inMemoryProducts: any[] = [];
+const DEFAULT_STARTER_PRODUCTS = [
+  {
+    id: 'pet-saude-001',
+    title: 'Fonte Bebedouro Elétrica Bivolt 2.5L Filtro Carvão Ativado Ultra Silenciosa',
+    shortDescription: 'Água corrente e oxigenada com bomba ultra silenciosa e filtro triplo purificador.',
+    fullDescription: 'Estimula pets a beberem até 3x mais água, prevenindo problemas renais e urinários. Sistema de bomba de 1.5W econômica e ultra silenciosa (< 20dB) com LED indicador de nível e filtro de carvão ativado.',
+    price: 68.90,
+    originalPrice: 119.00,
+    discountPercent: 42,
+    rating: 4.9,
+    reviewsCount: 2200,
+    salesCount: 7400,
+    imageUrl: 'https://down-br.img.susercontent.com/file/br-11134207-7r98o-m6f8gc8db7fr71@resize_w900_nl.webp',
+    category: 'saude_bem_estar',
+    shopeeUrl: 'https://s.shopee.com.br/5VVm7yZBAa',
+    affiliateUrl: 'https://s.shopee.com.br/5VVm7yZBAa',
+    tags: ['Prevenção Renal', 'Bomba Silenciosa', 'Filtro Carvão Ativado', 'Bivolt'],
+    badges: ['Top Saúde Pet', 'Frete Grátis'],
+    isFeatured: true,
+    isFlashDeal: true,
+    highlights: {
+      idealFor: 'Pets que não bebem água parada e tutores preocupados com a saúde renal.',
+      whyBuy: 'Item número #1 em recomendação veterinária para hidratação preventiva.',
+      tips: 'Troque o refil do filtro de carvão ativado a cada 30 dias para máxima pureza.'
+    },
+    sellerName: 'AquaPet Brasil',
+    freeShipping: true
+  }
+];
+
+const DEFAULT_BANNERS = [
+  {
+    id: 'banner-blog-segredo-felino',
+    badge: '🔥 MATÉRIA EM ALTA • GUIA FELINO',
+    badgeColor: 'bg-amber-600 text-white',
+    title: 'O Segredo Felino que Evita o Veterinário: Por que seu gato ignora água parada?',
+    subtitle: 'Descubra o instinto ancestral do deserto, os riscos renais e como fazer seu gato beber até 3x mais água hoje mesmo.',
+    ctaText: 'Descobrir o Segredo Felino →',
+    categoryTarget: 'saude_bem_estar',
+    bgGradient: 'from-stone-950 via-stone-900 to-amber-950',
+    image: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1200&q=80',
+    highlightBadge: 'Destaque Editorial da Redação',
+    blogPostSlug: 'o-segredo-felino-que-evita-o-veterinario-agua-corrente'
+  },
+  {
+    id: 'banner-fonte-silenciosa',
+    badge: 'DESTAQUE EM SAÚDE & BEM-ESTAR',
+    badgeColor: 'bg-orange-600 text-white',
+    title: 'Fonte Bebedouro Elétrica Ultra Silenciosa Bivolt',
+    subtitle: 'Água corrente e filtrada por carvão ativado. Estimula seu pet a beber 3x mais água e previne problemas renais.',
+    ctaText: 'Ver Oferta na Shopee Oficial',
+    categoryTarget: 'saude_bem_estar',
+    bgGradient: 'from-stone-900 via-stone-950 to-stone-900',
+    image: 'https://down-br.img.susercontent.com/file/br-11134207-7r98o-m6f8gc8db7fr71@resize_w900_nl.webp',
+    highlightBadge: 'Oferta Oficial Shopee'
+  }
+];
+
+let inMemoryProducts: any[] = [...DEFAULT_STARTER_PRODUCTS];
+let inMemoryBanners: any[] = [...DEFAULT_BANNERS];
+
+function loadPersistedData() {
+  ensureDataDir();
+  // Load Supabase Config
+  try {
+    if (fs.existsSync(SUPABASE_CONFIG_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(SUPABASE_CONFIG_FILE, 'utf-8'));
+      if (parsed && parsed.url && parsed.key) {
+        serverSupabaseConfig = { url: parsed.url.trim(), key: parsed.key.trim() };
+      }
+    }
+  } catch (e) {
+    console.warn("Error reading supabase_config.json:", e);
+  }
+
+  // Load Products
+  try {
+    if (fs.existsSync(PRODUCTS_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf-8'));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryProducts = parsed;
+      } else {
+        inMemoryProducts = [...DEFAULT_STARTER_PRODUCTS];
+        savePersistedProducts(inMemoryProducts);
+      }
+    } else {
+      inMemoryProducts = [...DEFAULT_STARTER_PRODUCTS];
+      savePersistedProducts(inMemoryProducts);
+    }
+  } catch (e) {
+    inMemoryProducts = [...DEFAULT_STARTER_PRODUCTS];
+  }
+
+  // Load Settings
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+      if (parsed && typeof parsed === 'object') {
+        affiliateSettings = { ...affiliateSettings, ...parsed };
+      }
+    }
+  } catch (e) {}
+
+  // Load Banners
+  try {
+    if (fs.existsSync(BANNERS_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(BANNERS_FILE, 'utf-8'));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryBanners = parsed;
+      }
+    }
+  } catch (e) {}
+}
 
 interface ClickRecord {
   id: string;
@@ -331,6 +497,29 @@ let clickLogs: ClickRecord[] = [
 ];
 
 async function startServer() {
+  // Load persisted server-side data from disk (products, banners, settings, Supabase config)
+  loadPersistedData();
+
+  // If Supabase is configured, sync initial products in background on startup
+  const { client: initSupabaseClient, isConfigured: initSupabaseConfigured } = getSupabase();
+  if (initSupabaseConfigured && initSupabaseClient) {
+    Promise.resolve(
+      initSupabaseClient
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+    ).then(({ data, error }: any) => {
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const mapped = data.map(mapDbToProduct);
+        inMemoryProducts = mapped;
+        savePersistedProducts(mapped);
+        console.log(`[Supabase Startup] Loaded ${mapped.length} products from Supabase database.`);
+      }
+    }).catch((err: any) => {
+      console.warn("[Supabase Startup] Background load warning:", err);
+    });
+  }
+
   const app = express();
   const PORT = 3000;
 
@@ -761,6 +950,82 @@ async function startServer() {
   // SUPABASE STATUS & PRODUCT CRUD ENDPOINTS
   // ==========================================
 
+  // Supabase public configuration endpoint
+  app.get("/api/supabase/config", (req, res) => {
+    const { url, isConfigured } = getSupabase();
+    const key = (process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || serverSupabaseConfig.key || '')?.trim();
+    res.json({
+      configured: isConfigured,
+      url: url || '',
+      key: key || ''
+    });
+  });
+
+  // Save Supabase credentials to server so all users & browsers can immediately access the cloud database
+  app.post("/api/supabase/config", async (req, res) => {
+    try {
+      const { url, key } = req.body;
+      const cleanUrl = (url || '').trim();
+      const cleanKey = (key || '').trim();
+
+      serverSupabaseConfig = { url: cleanUrl, key: cleanKey };
+      savePersistedSupabaseConfig(serverSupabaseConfig);
+      supabaseClient = null; // force reload client
+
+      const { client, isConfigured } = getSupabase();
+      let productCount = 0;
+
+      if (isConfigured && client) {
+        try {
+          const { data, error } = await client
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const mapped = data.map(mapDbToProduct);
+            inMemoryProducts = mapped;
+            savePersistedProducts(mapped);
+            productCount = mapped.length;
+          }
+        } catch (e) {
+          console.warn("[Supabase Config] Initial query error:", e);
+        }
+      }
+
+      res.json({
+        success: true,
+        configured: isConfigured,
+        productCount,
+        message: isConfigured 
+          ? `Configuração do Supabase salva com sucesso no servidor! ${productCount > 0 ? `${productCount} produtos carregados.` : ''}`
+          : "Credenciais removidas do servidor."
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Falha ao salvar configuração", details: err.message });
+    }
+  });
+
+  // Banners API (persisted across all users)
+  app.get("/api/banners", (req, res) => {
+    res.json({ success: true, banners: inMemoryBanners });
+  });
+
+  app.post("/api/banners", (req, res) => {
+    try {
+      const { banners } = req.body;
+      if (Array.isArray(banners)) {
+        inMemoryBanners = banners;
+        savePersistedBanners(banners);
+        res.json({ success: true, count: banners.length });
+      } else {
+        res.status(400).json({ error: "Banners deve ser um array." });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Check Supabase connection and status
   app.get("/api/supabase/status", async (req, res) => {
     const { client, url, isConfigured } = getSupabase();
@@ -832,6 +1097,7 @@ async function startServer() {
             }
           }
           inMemoryProducts = uniqueProducts;
+          savePersistedProducts(uniqueProducts);
           return res.json({
             success: true,
             source: 'supabase',
@@ -850,6 +1116,9 @@ async function startServer() {
         seenMemory.add(item.id);
         uniqueMemory.push(item);
       }
+    }
+    if (uniqueMemory.length === 0) {
+      uniqueMemory.push(...DEFAULT_STARTER_PRODUCTS);
     }
     inMemoryProducts = uniqueMemory;
 
@@ -872,8 +1141,9 @@ async function startServer() {
         product.id = `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
       }
 
-      // Add to in-memory store
+      // Add to in-memory store and persist
       inMemoryProducts = [product, ...inMemoryProducts.filter(p => p.id !== product.id)];
+      savePersistedProducts(inMemoryProducts);
 
       // Sync to Supabase if connected
       const { client, isConfigured } = getSupabase();
@@ -911,6 +1181,7 @@ async function startServer() {
       const updatedData = { ...req.body, id };
 
       inMemoryProducts = inMemoryProducts.map(p => p.id === id ? updatedData : p);
+      savePersistedProducts(inMemoryProducts);
 
       const { client, isConfigured } = getSupabase();
       let supabaseResult = null;
@@ -945,6 +1216,7 @@ async function startServer() {
     try {
       const { id } = req.params;
       inMemoryProducts = inMemoryProducts.filter(p => p.id !== id);
+      savePersistedProducts(inMemoryProducts);
 
       const { client, isConfigured } = getSupabase();
       let supabaseResult = null;
@@ -982,6 +1254,7 @@ async function startServer() {
       }
 
       inMemoryProducts = products;
+      savePersistedProducts(products);
 
       const { client, isConfigured } = getSupabase();
       if (!isConfigured || !client) {
