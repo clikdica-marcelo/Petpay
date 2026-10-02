@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Product } from '../types';
 import { X, Search, CheckCircle2 } from 'lucide-react';
 import { formatBRL } from '../utils/currency';
+import { deduplicateProducts } from '../utils/productHelpers';
 
 interface BannerProductSelectorModalProps {
   isOpen: boolean;
@@ -19,9 +20,10 @@ export const BannerProductSelectorModal: React.FC<BannerProductSelectorModalProp
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) return products;
-    const lower = searchTerm.toLowerCase();
-    return products.filter(p => p.title.toLowerCase().includes(lower) || p.shortDescription?.toLowerCase().includes(lower));
+    const list = !searchTerm.trim() 
+      ? products 
+      : products.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()) || p.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return deduplicateProducts(list);
   }, [products, searchTerm]);
 
   if (!isOpen) return null;

@@ -15,6 +15,7 @@ import { Footer } from './components/Footer';
 import { INITIAL_PRODUCTS, CATEGORY_LABELS, DEFAULT_BANNERS } from './data/mockProducts';
 import { Product, ProductCategory, AffiliateSettings, Banner, UserAccount } from './types';
 import { formatBRL } from './utils/currency';
+import { deduplicateProducts, mergeProductsUnique } from './utils/productHelpers';
 import { 
   loadProductsFromCloud, 
   syncProductToCloud, 
@@ -38,8 +39,18 @@ import {
 export default function App() {
   // Products state
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('achadinhospet_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    try {
+      const saved = localStorage.getItem('achadinhospet_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateProducts(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading stored products:', e);
+    }
+    return deduplicateProducts(INITIAL_PRODUCTS);
   });
 
   // Filters and navigation state
@@ -49,14 +60,24 @@ export default function App() {
 
   // User interactions state (Browser-local saved list, no login required)
   const [favorites, setFavorites] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('achadinhospet_favorites');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('achadinhospet_favorites');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return deduplicateProducts(parsed);
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+    return [];
   });
 
   // Sync products and favorites with localStorage on every state change
   useEffect(() => {
     try {
-      localStorage.setItem('achadinhospet_products', JSON.stringify(products));
+      localStorage.setItem('achadinhospet_products', JSON.stringify(deduplicateProducts(products)));
     } catch (e) {
       console.warn('LocalStorage full or error saving products:', e);
     }
@@ -64,7 +85,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('achadinhospet_favorites', JSON.stringify(favorites));
+      localStorage.setItem('achadinhospet_favorites', JSON.stringify(deduplicateProducts(favorites)));
     } catch (e) {
       console.warn('LocalStorage error saving favorites:', e);
     }
@@ -75,7 +96,7 @@ export default function App() {
     loadProductsFromCloud()
       .then(res => {
         if (res.success && Array.isArray(res.products) && res.products.length > 0) {
-          setProducts(res.products);
+          setProducts(prev => mergeProductsUnique(prev, res.products));
         }
       })
       .catch(err => console.log('Error initializing products from cloud:', err));
@@ -219,7 +240,7 @@ export default function App() {
       if (isFav) {
         return prev.filter(p => p.id !== product.id);
       }
-      return [...prev, product];
+      return deduplicateProducts([...prev, product]);
     });
   };
 
@@ -233,20 +254,20 @@ export default function App() {
 
   // Product CRUD actions for Admin
   const handleAddProduct = (newProd: Product) => {
-    setProducts((prev) => [newProd, ...prev]);
+    setProducts((prev) => deduplicateProducts([newProd, ...prev.filter(p => p.id !== newProd.id)]));
     syncProductToCloud(newProd);
   };
 
   const handleBulkImportProducts = (newProds: Product[]) => {
     setProducts((prev) => {
-      const merged = [...newProds, ...prev];
+      const merged = mergeProductsUnique(prev, newProds);
       syncAllProductsToCloud(merged);
       return merged;
     });
   };
 
   const handleUpdateProduct = (updated: Product) => {
-    setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setProducts((prev) => deduplicateProducts(prev.map((p) => (p.id === updated.id ? updated : p))));
     syncProductToCloud(updated);
   };
 
@@ -281,7 +302,7 @@ export default function App() {
 
   // Filter and sort catalog
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const matched = products.filter((p) => {
       // Curated Preset Filter
       if (curatedFilter === 'promocoes') {
         const hasGoodDiscount = (p.discountPercent || 0) >= 20 || p.isFlashDeal;
@@ -328,11 +349,13 @@ export default function App() {
       // Default: mais populares / vendas
       return b.salesCount - a.salesCount;
     });
+    return deduplicateProducts(matched);
   }, [products, curatedFilter, selectedCategory, searchQuery]);
 
   // Flash deals subset for highlighting
   const flashDeals = useMemo(() => {
-    return products.filter((p) => p.isFlashDeal || (p.discountPercent && p.discountPercent >= 40)).slice(0, 4);
+    const rawDeals = products.filter((p) => p.isFlashDeal || (p.discountPercent && p.discountPercent >= 40));
+    return deduplicateProducts(rawDeals).slice(0, 4);
   }, [products]);
 
 

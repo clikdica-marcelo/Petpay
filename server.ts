@@ -822,11 +822,19 @@ async function startServer() {
 
         if (!error && data && data.length > 0) {
           const mapped = data.map(mapDbToProduct);
-          inMemoryProducts = mapped;
+          const seenIds = new Set<string>();
+          const uniqueProducts: any[] = [];
+          for (const item of mapped) {
+            if (item && item.id && !seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              uniqueProducts.push(item);
+            }
+          }
+          inMemoryProducts = uniqueProducts;
           return res.json({
             success: true,
             source: 'supabase',
-            products: mapped
+            products: uniqueProducts
           });
         }
       } catch (err) {
@@ -834,10 +842,20 @@ async function startServer() {
       }
     }
 
+    const seenMemory = new Set<string>();
+    const uniqueMemory: any[] = [];
+    for (const item of inMemoryProducts) {
+      if (item && item.id && !seenMemory.has(item.id)) {
+        seenMemory.add(item.id);
+        uniqueMemory.push(item);
+      }
+    }
+    inMemoryProducts = uniqueMemory;
+
     res.json({
       success: true,
       source: 'memory',
-      products: inMemoryProducts
+      products: uniqueMemory
     });
   });
 

@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Product } from '../types';
+import { deduplicateProducts } from './productHelpers';
 
 export interface SupabaseConfig {
   url: string;
@@ -323,7 +324,7 @@ export async function loadProductsFromCloud(): Promise<{ success: boolean; produ
       if (!error && Array.isArray(data) && data.length > 0) {
         return {
           success: true,
-          products: data.map(mapDbRowToProduct),
+          products: deduplicateProducts(data.map(mapDbRowToProduct)),
           source: 'supabase',
         };
       }
@@ -341,7 +342,7 @@ export async function loadProductsFromCloud(): Promise<{ success: boolean; produ
       if (json && json.success && Array.isArray(json.products) && json.products.length > 0) {
         return {
           success: true,
-          products: json.products,
+          products: deduplicateProducts(json.products),
           source: json.source || 'api',
         };
       }

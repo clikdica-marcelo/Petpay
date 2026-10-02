@@ -15,6 +15,7 @@ import {
 import { Product, ProductCategory } from '../types';
 import { OFFICIAL_CATEGORIES } from '../data/mockProducts';
 import { formatBRL, parseBRL } from '../utils/currency';
+import { deduplicateProducts } from '../utils/productHelpers';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -241,8 +242,9 @@ https://shopee.com.br/produto/101 | Coleira Peitoral Antipuxão | 29.90 | acesso
 
   const handleConfirmImport = () => {
     if (previewProducts.length > 0) {
-      onImportProducts(previewProducts);
-      setImportedCount(previewProducts.length);
+      const cleanList = deduplicateProducts(previewProducts);
+      onImportProducts(cleanList);
+      setImportedCount(cleanList.length);
       setTimeout(() => {
         setImportedCount(null);
         setPreviewProducts([]);

@@ -16,6 +16,7 @@ import {
 import { Product, ProductCategory } from '../../types';
 import { OFFICIAL_CATEGORIES, CATEGORY_LABELS } from '../../data/mockProducts';
 import { formatBRL } from '../../utils/currency';
+import { deduplicateProducts } from '../../utils/productHelpers';
 
 interface AdminProductsTabProps {
   products: Product[];
@@ -53,7 +54,7 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
   }, [productToDelete]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const list = products.filter((p) => {
       const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = 
@@ -64,6 +65,7 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
 
       return matchesCategory && matchesSearch;
     });
+    return deduplicateProducts(list);
   }, [products, searchTerm, selectedCategory]);
 
   const handleDeleteConfirm = (id: string) => {

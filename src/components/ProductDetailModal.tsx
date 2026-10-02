@@ -19,6 +19,7 @@ import {
 import { Product } from '../types';
 import { CATEGORY_LABELS } from '../data/mockProducts';
 import { formatBRL } from '../utils/currency';
+import { deduplicateProducts } from '../utils/productHelpers';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -56,9 +57,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   // Find related products in the same category
-  const related = allProducts
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .slice(0, 3);
+  const related = deduplicateProducts(
+    allProducts.filter((p) => p.id !== product.id && p.category === product.category)
+  ).slice(0, 3);
 
 
   return (
