@@ -19,7 +19,9 @@ import {
   Code,
   Search,
   Globe,
-  ExternalLink
+  ExternalLink,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { AffiliateSettings, Product } from '../../types';
 
@@ -226,6 +228,120 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           >
             {settingsSaved ? <Check className="w-4 h-4 text-amber-200" /> : <Save className="w-4 h-4" />}
             <span>{settingsSaved ? 'Configurações Salvas!' : 'Salvar Alterações'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* AI Multi-Engine Configuration (Gemini + Groq Fallback) */}
+      <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div>
+              <h5 className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                <span>Motor de IA & Fallback Gratuito (Groq AI)</span>
+                <span className="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                  Zero Custo • 500 tokens/s
+                </span>
+              </h5>
+              <p className="text-[11px] text-stone-500">
+                Garante que o assistente pet nunca trave caso acabem as cotas do Google Gemini.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-purple-50/60 border border-purple-200/70 rounded-xl p-3 text-xs text-purple-900 space-y-1.5">
+          <p className="font-semibold flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+            <span>Como funciona a redundância automática:</span>
+          </p>
+          <ul className="list-disc list-inside text-[11px] text-purple-800 space-y-0.5 pl-1">
+            <li><strong>Primário:</strong> Google Gemini 3.8 Flash (raciocínio avançado e catálogo integrado).</li>
+            <li><strong>Fallback Imediato (Groq):</strong> Se o Gemini atingir o limite ou instabilidade, o <strong>Llama 3.3 70B Versatile</strong> da Groq assume instantaneamente.</li>
+            <li><strong>Base Local:</strong> Se ambos estiverem offline, o guia veterinário local garante resposta 100% prática.</li>
+          </ul>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="font-bold text-stone-800 block mb-1">
+              Chave da API Groq (Opcional - Gratuita)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                placeholder="gsk_..."
+                value={tempSettings.groqApiKey || ''}
+                onChange={(e) => setTempSettings({ ...tempSettings, groqApiKey: e.target.value.trim() })}
+                className="flex-1 p-2.5 bg-white border border-stone-300 rounded-xl text-xs font-mono focus:bg-white focus:outline-none focus:border-purple-600"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!tempSettings.groqApiKey) {
+                    alert('Insira uma chave Groq (gsk_...) para testar.');
+                    return;
+                  }
+                  try {
+                    const res = await fetch('/api/ai/test-groq', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ apiKey: tempSettings.groqApiKey })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      alert('✅ Sucesso! Conexão com Groq AI funcionando perfeitamente.');
+                    } else {
+                      alert(`❌ Falha: ${data.message || 'Chave inválida'}`);
+                    }
+                  } catch (err: any) {
+                    alert('Erro ao testar chave: ' + err.message);
+                  }
+                }}
+                className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shrink-0"
+              >
+                Testar Groq
+              </button>
+            </div>
+            <p className="text-[11px] text-stone-400 mt-1 flex items-center gap-1">
+              <span>Gere sua chave gratuita em segundos no console da Groq:</span>
+              <a 
+                href="https://console.groq.com/keys" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="text-purple-700 hover:underline font-bold inline-flex items-center gap-0.5"
+              >
+                console.groq.com/keys <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+
+          <div>
+            <label className="font-bold text-stone-800 block mb-1">
+              Modo de Operação da IA
+            </label>
+            <select
+              value={tempSettings.preferredAiProvider || 'auto'}
+              onChange={(e) => setTempSettings({ ...tempSettings, preferredAiProvider: e.target.value as any })}
+              className="w-full p-2.5 bg-white border border-stone-300 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-600"
+            >
+              <option value="auto">Automático: Gemini como Principal + Groq como Fallback (Recomendado)</option>
+              <option value="gemini">Apenas Google Gemini</option>
+              <option value="groq">Preferência para Groq (Llama 3.3 70B Gratuito)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <button
+            onClick={handleSaveSettings}
+            className="px-6 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+          >
+            {settingsSaved ? <Check className="w-4 h-4 text-purple-200" /> : <Save className="w-4 h-4" />}
+            <span>{settingsSaved ? 'Configurações Salvas!' : 'Salvar Configurações de IA'}</span>
           </button>
         </div>
       </div>

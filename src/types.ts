@@ -76,6 +76,8 @@ export interface AffiliateSettings {
   storeName: string;
   storeDomain: string;
   contactEmail: string;
+  groqApiKey?: string;
+  preferredAiProvider?: 'auto' | 'gemini' | 'groq';
 }
 
 export interface CuratedKit {

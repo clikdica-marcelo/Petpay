@@ -1140,6 +1140,201 @@ async function startServer() {
     }
   });
 
+  // Helper: Groq Cloud API Call (Llama 3.3 70B / Llama 3.1 8B)
+  async function callGroqChat(options: {
+    question: string;
+    history?: any[];
+    systemInstruction: string;
+    apiKey?: string;
+  }): Promise<string | null> {
+    const key = (options.apiKey || process.env.GROQ_API_KEY || (affiliateSettings as any).groqApiKey)?.trim();
+    if (!key) return null;
+
+    const messages = [
+      { role: 'system', content: options.systemInstruction },
+      ...(Array.isArray(options.history)
+        ? options.history.slice(-6).map((h: any) => ({
+            role: h.role === 'assistant' || h.role === 'model' ? 'assistant' : 'user',
+            content: String(h.text || h.content || '')
+          }))
+        : []),
+      { role: 'user', content: options.question }
+    ];
+
+    try {
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages,
+          temperature: 0.4,
+          max_tokens: 1024,
+        })
+      });
+
+      if (resp.ok) {
+        const json = await resp.json();
+        return json.choices?.[0]?.message?.content || null;
+      }
+
+      // Secondary try with 8B instant model
+      const fallback8b = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages,
+          temperature: 0.4,
+          max_tokens: 1024,
+        })
+      });
+
+      if (fallback8b.ok) {
+        const json = await fallback8b.json();
+        return json.choices?.[0]?.message?.content || null;
+      }
+    } catch (e) {
+      console.warn('[Groq AI] Request error:', e);
+    }
+    return null;
+  }
+
+  // AI Pet Health Assistant Endpoint (Dual Engine: Gemini + Groq Fallback)
+  app.post("/api/chat/pet-assistant", async (req, res) => {
+    try {
+      const { question, history } = req.body;
+      if (!question || typeof question !== "string" || !question.trim()) {
+        return res.status(400).json({ error: "Pergunta inválida." });
+      }
+
+      const systemInstruction = `Você é o Especialista em Saúde, Higiene, Nutrição e Cuidados Pet do portal "Achadinhos Pet".
+Sua missão é dar respostas ULTRA OBJETIVAS, PRÁTICAS, PASSO A PASSO e DIRETAS para tutores de cães e gatos.
+
+DIRETRIZES CRÍTICAS:
+1. NUNCA dê respostas evasivas dizendo apenas "leve ao veterinário" para dúvidas cotidianas de manejo e cuidados (ex: banho em cães/gatos, escovação, queda de pelos, hidratação, escolha de ração, petiscos, xixi no lugar certo, pulgas, etc.). O tutor precisa de instruções claras e imediatas para agir em casa.
+2. DÊ ORIENTAÇÕES PRÁTICAS, SEQUENCIAIS E OBJETIVAS:
+   - Exemplo para BANHO EM CÃES:
+     • Frequência ideal: a cada 15 a 30 dias (banho semanal só se recomendado para tratamento de pele).
+     • Preparo: coloque bolinhas de algodão seco nos ouvidos para impedir entrada de água e prevenir otites.
+     • Água: temperatura morna para fresca (água quente resseca a pele e causa coceira).
+     • Xampu: use SEMPRE xampu específico para cães (pH neutro ou com clorexidina se houver coceiras). NUNCA use sabonete humano.
+     • Passo a passo: molhe do pescoço para a cauda; ensaboe massageando patas e barriga; enxágue abundantemente (resíduo de sabão causa dermatite); limpe o focinho com pano úmido.
+     • Secagem rigorosa: retire o excesso com toalha e use secador morno a pelo menos 20cm de distância. Pelagem úmida é a causa número #1 de fungos e mau cheiro.
+3. FORMATO DA RESPOSTA:
+   - Resposta direta em 1 frase resumindo o que fazer.
+   - Passo a passo numerado ou em tópicos com negritos claros.
+   - "💡 Dica de Ouro" ou "⚠️ O que NUNCA fazer".
+   - Se pertinente, mencione um produto prático útil (ex: xampu antisséptico de clorexidina, escova a vapor para remover pelos soltos, bebedouro automático, spray de tratamento de pele).
+4. Tom de voz: Especialista, seguro, didático e amigo do tutor. Responda em Português do Brasil.`;
+
+      const preferred = (affiliateSettings as any).preferredAiProvider || 'auto';
+      let reply: string | null = null;
+      let usedProvider = 'gemini';
+
+      // If user prefers Groq, try Groq first
+      if (preferred === 'groq') {
+        reply = await callGroqChat({ question: question.trim(), history, systemInstruction });
+        if (reply) {
+          usedProvider = 'groq';
+          return res.json({ success: true, reply, provider: usedProvider });
+        }
+      }
+
+      // Primary: Google Gemini
+      try {
+        const ai = getAI();
+        const contents: any[] = [];
+        if (Array.isArray(history)) {
+          for (const item of history.slice(-6)) {
+            if (item && item.text) {
+              contents.push({
+                role: item.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: String(item.text) }]
+              });
+            }
+          }
+        }
+        contents.push({
+          role: 'user',
+          parts: [{ text: question.trim() }]
+        });
+
+        let response;
+        try {
+          response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents,
+            config: { systemInstruction, temperature: 0.4 }
+          });
+        } catch (mErr: any) {
+          response = await ai.models.generateContent({
+            model: 'gemini-flash-latest',
+            contents,
+            config: { systemInstruction, temperature: 0.4 }
+          });
+        }
+
+        if (response && response.text) {
+          reply = response.text;
+          usedProvider = 'gemini';
+        }
+      } catch (geminiErr: any) {
+        console.warn("[AI Pet Assistant] Gemini limit/error, failing over to Groq:", geminiErr?.message || geminiErr);
+        // Failover to Groq AI
+        reply = await callGroqChat({ question: question.trim(), history, systemInstruction });
+        if (reply) {
+          usedProvider = 'groq';
+        }
+      }
+
+      if (reply) {
+        return res.json({ success: true, reply, provider: usedProvider });
+      }
+
+      // If both cloud AIs were unavailable, send a clear notification
+      res.json({
+        success: false,
+        useLocalFallback: true,
+        message: "Provedores de nuvem indisponíveis momentaneamente. Usando base de especialistas."
+      });
+    } catch (err: any) {
+      console.error("[AI Pet Assistant] Error:", err);
+      res.status(500).json({ error: "Erro ao gerar resposta da IA", details: err.message });
+    }
+  });
+
+  // Test Groq API Key Endpoint
+  app.post("/api/ai/test-groq", async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      const keyToTest = apiKey || process.env.GROQ_API_KEY || (affiliateSettings as any).groqApiKey;
+      if (!keyToTest) {
+        return res.status(400).json({ success: false, message: "Chave da API Groq não fornecida." });
+      }
+
+      const testResult = await callGroqChat({
+        question: "Diga 'Conexão Groq OK' em 3 palavras.",
+        systemInstruction: "Responda de forma ultra concisa.",
+        apiKey: keyToTest
+      });
+
+      if (testResult) {
+        res.json({ success: true, message: "Conexão com a API Groq verificada com sucesso!", sample: testResult });
+      } else {
+        res.status(400).json({ success: false, message: "Não foi possível validar a chave Groq. Verifique se a chave está correta em console.groq.com." });
+      }
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   // Check Supabase connection and status
   app.get("/api/supabase/status", async (req, res) => {
     const { client, url, isConfigured } = getSupabase();
