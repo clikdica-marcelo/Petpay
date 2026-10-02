@@ -387,6 +387,23 @@ export async function loadProductsFromCloud(): Promise<{ success: boolean; produ
     // Server API not reachable
   }
 
+  // Secondary static fallback: /products.json (for static builds like Vercel / CDN)
+  try {
+    const staticRes = await fetch('/products.json');
+    if (staticRes.ok) {
+      const staticJson = await staticRes.json();
+      if (Array.isArray(staticJson) && staticJson.length > 0) {
+        return {
+          success: true,
+          products: deduplicateProducts(staticJson),
+          source: 'api',
+        };
+      }
+    }
+  } catch (e) {
+    // Ignore static fetch error
+  }
+
   return { success: false, products: [], source: 'none' };
 }
 

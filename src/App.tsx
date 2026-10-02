@@ -89,18 +89,10 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Strictly filter out any deleted products or purged demo items
           const cleanSaved = deduplicateProducts(parsed).filter(p => !deletedIds.has(p.id));
-          if (cleanSaved.length > 0) {
-            return cleanSaved.map(p => {
-              if (p.id === 'pet-saude-001') {
-                return {
-                  ...p,
-                  imageUrl: 'https://down-br.img.susercontent.com/file/br-11134207-7r98o-m6f8gc8db7fr71@resize_w900_nl.webp',
-                  shopeeUrl: 'https://s.shopee.com.br/5VVm7yZBAa',
-                  affiliateUrl: 'https://s.shopee.com.br/5VVm7yZBAa'
-                };
-              }
-              return p;
-            });
+          if (cleanSaved.length >= INITIAL_PRODUCTS.length) {
+            return cleanSaved;
+          } else {
+            return mergeProductsUnique(cleanSaved, deduplicateProducts(INITIAL_PRODUCTS)).filter(p => !deletedIds.has(p.id));
           }
         }
       }
